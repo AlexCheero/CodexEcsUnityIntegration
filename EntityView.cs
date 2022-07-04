@@ -1,9 +1,9 @@
+using Components;
 using ECS;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
+using Tags;
 using UnityEngine;
 
 [Serializable]
@@ -108,6 +108,10 @@ public class EntityView : MonoBehaviour
     private EcsWorld _world;
     public int Id { get => Entity.GetId(); }
     public int Version { get => Entity.GetVersion(); }
+
+#if DEBUG
+    public bool IsValid { get => _world.IsEntityValid(Entity); }
+#endif
 
     public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
 
@@ -268,12 +272,41 @@ public class EntityView : MonoBehaviour
     }
 
     public bool Have<T>() => _world.Have<T>(Id);
-
+    public ref T AddComponent<T>(T component = default) => ref _world.AddComponent(Id, component);
+    public void AddTag<T>() => _world.AddTag<T>(Id);
     public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(Id);
+    public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
 
     public void DeleteSelf()
     {
         _world.Delete(Id);
         Destroy(gameObject);
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        var collidedView = collision.gameObject.GetComponent<EntityView>();
+        if (collidedView != null)
+        {
+            AddCollisionComponents(this, collidedView.Entity);
+            AddCollisionComponents(collidedView, Entity);
+        }
+        else
+        {
+            AddCollisionComponents(this, EntityExtension.NullEntity);
+        }
+    }
+
+    private static void AddCollisionComponents(EntityView view, Entity otherEntity)
+    {
+        if (view.Have<CollisionWith>())
+        {
+            if (view.Have<OverrideCollision>())
+                view.GetEcsComponent<CollisionWith>().entity = otherEntity;
+        }
+        else
+        {
+            view.AddComponent(new CollisionWith { entity = otherEntity });
+        }
     }
 }

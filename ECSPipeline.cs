@@ -2,6 +2,7 @@ using ECS;
 using System;
 using UnityEngine;
 
+//TODO: add fields to init EcsCacheSettings
 public class ECSPipeline : MonoBehaviour
 {
     private EcsWorld _world;
