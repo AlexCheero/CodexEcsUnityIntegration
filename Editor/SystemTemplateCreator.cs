@@ -7,11 +7,15 @@ static class SystemTemplateCreator
     private const string InitSystem = "InitSystem";
     private const string UpdateSystem = "UpdateSystem";
     private const string FixedUpdateSystem = "FixedUpdateSystem";
+    private const string AddReactiveSystem = "AddReactiveSystem";
+    private const string RemoveReactiveSystem = "RemoveReactiveSystem";
     private const string Extension = ".cs.txt";
 
     private static readonly string InitSystemTemplatePath;
     private static readonly string UpdateSystemTemplatePath;
     private static readonly string FixedUpdateSystemTemplatePath;
+    private static readonly string AddReactiveSystemTemplatePath;
+    private static readonly string RemoveReactiveSystemTemplatePath;
 
     static SystemTemplateCreator()
     {
@@ -19,6 +23,8 @@ static class SystemTemplateCreator
         InitSystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + InitSystem + Extension;
         UpdateSystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + UpdateSystem + Extension;
         FixedUpdateSystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + FixedUpdateSystem + Extension;
+        AddReactiveSystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + AddReactiveSystem + Extension;
+        RemoveReactiveSystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + RemoveReactiveSystem + Extension;
     }
 
     [MenuItem("Assets/Create/ECS/Systems/New init system", false, -1)]
@@ -37,6 +43,18 @@ static class SystemTemplateCreator
     private static void NewFixedUpdateSystem()
     {
         ProjectWindowUtil.CreateScriptAssetFromTemplateFile(FixedUpdateSystemTemplatePath, "NewFixedUpdateSystem.cs");
+    }
+
+    [MenuItem("Assets/Create/ECS/Systems/New add reactive system", false, -1)]
+    private static void NewAddReactiveSystem()
+    {
+        ProjectWindowUtil.CreateScriptAssetFromTemplateFile(AddReactiveSystemTemplatePath, "NewFixedUpdateSystem.cs");
+    }
+
+    [MenuItem("Assets/Create/ECS/Systems/New remove reactive system", false, -1)]
+    private static void NewRemoveReactiveSystem()
+    {
+        ProjectWindowUtil.CreateScriptAssetFromTemplateFile(RemoveReactiveSystemTemplatePath, "NewFixedUpdateSystem.cs");
     }
 
     private static string GetPathToEcsUnityIntegration(string startFolder = "Assets")
