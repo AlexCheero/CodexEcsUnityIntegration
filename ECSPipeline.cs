@@ -1,5 +1,7 @@
+using Components;
 using ECS;
 using System;
+using System.Reflection;
 using UnityEngine;
 
 //TODO: add fields to init EcsCacheSettings
@@ -18,6 +20,8 @@ public class ECSPipeline : MonoBehaviour
     public string[] _updateSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _fixedUpdateSystemTypeNames = new string[0];
+    [SerializeField]
+    public string[] _reactiveSystemTypeNames = new string[0];
 
 #if UNITY_EDITOR
     [SerializeField]
@@ -26,6 +30,8 @@ public class ECSPipeline : MonoBehaviour
     public bool[] _updateSwitches = new bool[0];
     [SerializeField]
     public bool[] _fixedUpdateSwitches = new bool[0];
+    [SerializeField]
+    public bool[] _reactiveSwitches = new bool[0];
 #endif
 
     void Start()
@@ -36,6 +42,8 @@ public class ECSPipeline : MonoBehaviour
         _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams);
         _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams);
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
+        foreach (var systemName in _reactiveSystemTypeNames)
+            SubscribeReactiveSystem(systemName);
 
         foreach (var view in FindObjectsOfType<EntityView>())
             view.InitAsEntity(_world);
@@ -92,6 +100,35 @@ public class ECSPipeline : MonoBehaviour
         return systems;
     }
 
+    private static readonly object[] SubscribeReactionParams = { null };
+    private void SubscribeReactiveSystem(string name)
+    {
+        var systemType = IntegrationHelper.GetTypeByName(name, EGatheredTypeCategory.ReactiveSystem);
+        var attribute = systemType.GetCustomAttribute<ReactiveSystemAttribute>(true);
+        var responseType = attribute.ResponseType;
+        var compType = attribute.ComponentType;
+        string subscriptionMethodName;
+        //TODO: add default cases to all other switches in integration
+        switch (responseType)
+        {
+            case EReactionType.OnAdd:
+                subscriptionMethodName = "SubscribeOnAdd";
+                break;
+            case EReactionType.OnRemove:
+                subscriptionMethodName = "SubscribeOnRemove";
+                break;
+            default:
+                Debug.LogError("unknown response type");
+                return;
+                break;
+        }
+
+        var methodInfo = systemType.GetMethod("Tick");
+        SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
+        var subscribeMethodInfo = typeof(EcsWorld).GetMethod(subscriptionMethodName).MakeGenericMethod(compType);
+        subscribeMethodInfo.Invoke(_world, SubscribeReactionParams);
+    }
+
 #if UNITY_EDITOR
     public bool AddSystem(string systemName, ESystemCategory systemCategory)
     {
@@ -103,6 +140,8 @@ public class ECSPipeline : MonoBehaviour
                 return AddSystem(systemName, ref _updateSystemTypeNames, ref _updateSwitches);
             case ESystemCategory.FixedUpdate:
                 return AddSystem(systemName, ref _fixedUpdateSystemTypeNames, ref _fixedUpdateSwitches);
+            case ESystemCategory.Reactive:
+                return AddSystem(systemName, ref _reactiveSystemTypeNames, ref _reactiveSwitches);
             default:
                 return false;
         }
@@ -134,6 +173,9 @@ public class ECSPipeline : MonoBehaviour
                 break;
             case ESystemCategory.FixedUpdate:
                 RemoveMetaAt(idx, ref _fixedUpdateSystemTypeNames, ref _fixedUpdateSwitches);
+                break;
+            case ESystemCategory.Reactive:
+                RemoveMetaAt(idx, ref _reactiveSystemTypeNames, ref _reactiveSwitches);
                 break;
         }
     }

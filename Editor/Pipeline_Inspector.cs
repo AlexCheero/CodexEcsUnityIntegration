@@ -10,10 +10,12 @@ public class Pipeline_Inspector : Editor
     private const string InitSystems = "Init Systems";
     private const string UpdateSystems = "Update Systems";
     private const string FixedSystems = "Fixed Update Systems";
+    private const string ReactiveSystems = "Reactive Systems";
 
     private static string[] initSystemTypeNames;
     private static string[] updateSystemTypeNames;
     private static string[] fixedUpdateSystemTypeNames;
+    private static string[] reactiveSystemTypeNames;
 
     private bool _addListExpanded;
 
@@ -41,6 +43,9 @@ public class Pipeline_Inspector : Editor
 
         fixedUpdateSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
             (t) => IsSystemType(t) && IntegrationHelper.HaveAttribute<FixedUpdateSystemAttribute>(t));
+
+        reactiveSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
+            (t) => IntegrationHelper.HaveAttribute<ReactiveSystemAttribute>(t));
     }
 
     private static bool IsSystemType(Type type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type);
@@ -62,12 +67,16 @@ public class Pipeline_Inspector : Editor
                 IntegrationHelper.DrawAddList(FixedSystems, fixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
                 GUILayout.Space(10);
+                IntegrationHelper.DrawAddList(ReactiveSystems, reactiveSystemTypeNames,
+                        (name) => OnAddSystem(name, ESystemCategory.Reactive));
+                GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
 
         DrawSystemCategory(ESystemCategory.Init);
         DrawSystemCategory(ESystemCategory.Update);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
+        DrawSystemCategory(ESystemCategory.Reactive);
     }
 
     private void DrawSystemCategory(ESystemCategory category)
@@ -89,6 +98,10 @@ public class Pipeline_Inspector : Editor
             case ESystemCategory.FixedUpdate:
                 systems = pipeline._fixedUpdateSystemTypeNames;
                 switches = pipeline._fixedUpdateSwitches;
+                break;
+            case ESystemCategory.Reactive:
+                systems = pipeline._reactiveSystemTypeNames;
+                switches = pipeline._reactiveSwitches;
                 break;
             default:
                 return;
@@ -116,15 +129,18 @@ public class Pipeline_Inspector : Editor
                 EditorUtility.SetDirty(target);
             }
 
-            if (GUILayout.Button(new GUIContent("^"), GUILayout.ExpandWidth(false)))
+            if (category != ESystemCategory.Reactive)
             {
-                if (Pipeline.Move(category, i, true))
-                    EditorUtility.SetDirty(target);
-            }
-            if (GUILayout.Button(new GUIContent("v"), GUILayout.ExpandWidth(false)))
-            {
-                if (Pipeline.Move(category, i, false))
-                    EditorUtility.SetDirty(target);
+                if (GUILayout.Button(new GUIContent("^"), GUILayout.ExpandWidth(false)))
+                {
+                    if (Pipeline.Move(category, i, true))
+                        EditorUtility.SetDirty(target);
+                }
+                if (GUILayout.Button(new GUIContent("v"), GUILayout.ExpandWidth(false)))
+                {
+                    if (Pipeline.Move(category, i, false))
+                        EditorUtility.SetDirty(target);
+                }
             }
 
             EditorGUILayout.EndHorizontal();

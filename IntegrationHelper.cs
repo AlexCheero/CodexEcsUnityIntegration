@@ -10,11 +10,28 @@ public class InitSystemAttribute : Attribute { }
 public class UpdateSystemAttribute : Attribute { }
 public class FixedUpdateSystemAttribute : Attribute { }
 
+public enum EReactionType
+{
+    OnAdd,
+    OnRemove
+}
+public class ReactiveSystemAttribute : Attribute
+{
+    public EReactionType ResponseType;
+    public Type ComponentType;
+    public ReactiveSystemAttribute(EReactionType responseType, Type componentType)
+    {
+        ResponseType = responseType;
+        ComponentType = componentType;
+    }
+}
+
 public enum ESystemCategory
 {
     Init = 0,
     Update,
     FixedUpdate,
+    Reactive,
     Max
 }
 
@@ -22,7 +39,8 @@ public enum EGatheredTypeCategory
 {
     EcsComponent,
     UnityComponent,
-    System
+    System,
+    ReactiveSystem
 }
 
 public static class IntegrationHelper
@@ -30,9 +48,11 @@ public static class IntegrationHelper
     public const string Components = "Components";
     public const string Tags = "Tags";
 
+    //TODO: unify with typenames from inspectors
     public static Type[] EcsComponentTypes;
     public static Type[] UnityComponentTypes;
     public static Type[] SystemTypes;
+    public static Type[] ReactiveSystemTypes;
 
     static IntegrationHelper()
     {
@@ -45,9 +65,12 @@ public static class IntegrationHelper
             types.AddRange(assembly.GetTypes().Where((t) => typeof(Component).IsAssignableFrom(t)));
         UnityComponentTypes = types.ToArray();
 
-        SystemTypes = typeof(EcsSystem).Assembly.GetTypes()
+        SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
             //TODO: duplicated from Pipeline_Inspector move to helper class
             .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToArray();
+
+        ReactiveSystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
+            .Where((type) => HaveAttribute<ReactiveSystemAttribute>(type)).ToArray();
     }
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
@@ -93,6 +116,9 @@ public static class IntegrationHelper
                 break;
             case EGatheredTypeCategory.System:
                 types = SystemTypes;
+                break;
+            case EGatheredTypeCategory.ReactiveSystem:
+                types = ReactiveSystemTypes;
                 break;
             default:
                 return null;
