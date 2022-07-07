@@ -45,6 +45,8 @@ public class ECSPipeline : MonoBehaviour
         foreach (var systemName in _reactiveSystemTypeNames)
             SubscribeReactiveSystem(systemName);
 
+        SetMutuallyExclusiveComponents();
+
         foreach (var view in FindObjectsOfType<EntityView>())
             view.InitAsEntity(_world);
 
@@ -127,6 +129,23 @@ public class ECSPipeline : MonoBehaviour
         SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
         var subscribeMethodInfo = typeof(EcsWorld).GetMethod(subscriptionMethodName).MakeGenericMethod(compType);
         subscribeMethodInfo.Invoke(_world, SubscribeReactionParams);
+    }
+
+    private void SetMutuallyExclusiveComponents()
+    {
+        var methodName = "SetMutualExclusivity";
+        foreach (var componentType in IntegrationHelper.EcsComponentTypes)
+        {
+            var mutExclusiveAttribute = componentType.GetCustomAttribute<MutualyExclusiveAttribute>();
+            if (mutExclusiveAttribute == null)
+                continue;
+
+            foreach (var exclusiveType in mutExclusiveAttribute.Exclusives)
+            {
+                var methodInfo = typeof(EcsWorld).GetMethod(methodName).MakeGenericMethod(componentType, exclusiveType);
+                methodInfo.Invoke(_world, new object[0]);
+            }
+        }
     }
 
 #if UNITY_EDITOR

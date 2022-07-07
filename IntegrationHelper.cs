@@ -10,6 +10,12 @@ public class InitSystemAttribute : Attribute { }
 public class UpdateSystemAttribute : Attribute { }
 public class FixedUpdateSystemAttribute : Attribute { }
 
+public class MutualyExclusiveAttribute : Attribute
+{
+    public Type[] Exclusives;
+    public MutualyExclusiveAttribute(params Type[] exclusives) => Exclusives = exclusives;
+}
+
 public enum EReactionType
 {
     OnAdd,
