@@ -122,7 +122,6 @@ public class ECSPipeline : MonoBehaviour
             default:
                 Debug.LogError("unknown response type");
                 return;
-                break;
         }
 
         var methodInfo = systemType.GetMethod("Tick");
