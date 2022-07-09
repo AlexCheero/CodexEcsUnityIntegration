@@ -23,6 +23,8 @@ public class EntityView_Inspector : Editor
 
     public override VisualElement CreateInspectorGUI()
     {
+        //TODO: it doesn't get all the components. to get most of them EntityView script should
+        //      be the last script of GO, and still it can't get the EntityView script itself
         var viewComponents = View.GetComponents<Component>();
         var length = viewComponents.Length - 1;
         _viewComponentTypeNames = new string[length];
