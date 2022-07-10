@@ -250,8 +250,8 @@ public class EntityView : MonoBehaviour
     }
 
     public bool Have<T>() => _world.Have<T>(Id);
-    public ref T AddComponent<T>(T component = default) => ref _world.AddComponent(Id, component);
-    public void Add<T>() => _world.Add<T>(Id);
+    public ref T AddAndReturnRef<T>(T component = default) => ref _world.AddAndReturnRef(Id, component);
+    public void Add<T>(T component = default) => _world.Add<T>(Id, component);
     public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(Id);
     public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
 
@@ -284,7 +284,7 @@ public class EntityView : MonoBehaviour
         }
         else
         {
-            view.AddComponent(new CollisionWith { entity = otherEntity });
+            view.Add(new CollisionWith { entity = otherEntity });
         }
     }
 }
