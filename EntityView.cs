@@ -201,8 +201,7 @@ public class EntityView : MonoBehaviour
     }
 #endif
 
-    private static readonly object[] AddComponentParams = { null, null };
-    private static readonly object[] AddTagParams = { null };
+    private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
         _world = world;
@@ -210,32 +209,24 @@ public class EntityView : MonoBehaviour
         var entityId = _world.Create();
         Entity = _world.GetById(entityId);
 
-        MethodInfo addComponentInfo = typeof(EcsWorld).GetMethod("AddComponentNoReturn");
-        MethodInfo addTagInfo = typeof(EcsWorld).GetMethod("AddTag");
+        MethodInfo addMethodInfo = typeof(EcsWorld).GetMethod("Add");
 
         foreach (var meta in _metas)
         {
+            Type compType;
             object componentObj;
-            MethodInfo addMethodInfo;
-            object[] addParams;
-            //TODO: to much copypaste here, refactor
             if (meta.UnityComponent != null)
             {
+                compType = meta.UnityComponent.GetType();
                 componentObj = meta.UnityComponent;
-                addMethodInfo = addComponentInfo.MakeGenericMethod(meta.UnityComponent.GetType());
-                addParams = AddComponentParams;
-                addParams[0] = Id;
-                addParams[1] = componentObj;
             }
-            else if (meta.Fields.Length > 0)
+            else
             {
-                var compType = IntegrationHelper.GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
+                compType = IntegrationHelper.GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
 #if DEBUG
                 if (compType == null)
                     throw new Exception("can't find component type");
 #endif
-                addMethodInfo = addComponentInfo.MakeGenericMethod(compType);
-
                 componentObj = Activator.CreateInstance(compType);
 
                 foreach (var field in meta.Fields)
@@ -247,25 +238,12 @@ public class EntityView : MonoBehaviour
                     var fieldInfo = compType.GetField(field.Name);
                     fieldInfo.SetValue(componentObj, value);
                 }
-                addParams = AddComponentParams;
-                addParams[0] = Id;
-                addParams[1] = componentObj;
             }
-            else
-            {
-                var compType = IntegrationHelper.GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
-#if DEBUG
-                if (compType == null)
-                    throw new Exception("can't find component type");
-#endif
-                addMethodInfo = addTagInfo.MakeGenericMethod(compType);
-                componentObj = Activator.CreateInstance(compType);
-                addParams = AddTagParams;
-                addParams[0] = Id;
-            }
+            AddParams[0] = Id;
+            AddParams[1] = componentObj;
 
-            //TODO: if can't invoke with null arg implement second AddComponentNoReturn without second argument
-            addMethodInfo.Invoke(_world, addParams);
+            MethodInfo genAddMethodInfo = addMethodInfo.MakeGenericMethod(compType);
+            genAddMethodInfo.Invoke(_world, AddParams);
         }
 
         return entityId;
@@ -273,7 +251,7 @@ public class EntityView : MonoBehaviour
 
     public bool Have<T>() => _world.Have<T>(Id);
     public ref T AddComponent<T>(T component = default) => ref _world.AddComponent(Id, component);
-    public void AddTag<T>() => _world.AddTag<T>(Id);
+    public void Add<T>() => _world.Add<T>(Id);
     public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(Id);
     public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
 
