@@ -110,22 +110,30 @@ public class ECSPipeline : MonoBehaviour
         var responseType = attribute.ResponseType;
         var compType = attribute.ComponentType;
         string subscriptionMethodName;
+
+        var methodInfo = systemType.GetMethod("Tick");
         //TODO: add default cases to all other switches in integration
         switch (responseType)
         {
             case EReactionType.OnAdd:
                 subscriptionMethodName = "SubscribeOnAdd";
+                SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
                 break;
             case EReactionType.OnRemove:
                 subscriptionMethodName = "SubscribeOnRemove";
+                SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
+                break;
+            case EReactionType.OnChange:
+                subscriptionMethodName = "SubscribeOnChange";
+                var generalType = typeof(EcsWorld.OnChangedHandler<>.Handler);
+                var realType = generalType.MakeGenericType(compType);
+                SubscribeReactionParams[0] = Delegate.CreateDelegate(realType, methodInfo);
                 break;
             default:
-                Debug.LogError("unknown response type");
+                Debug.LogError("unknown response type for system " + name);
                 return;
         }
 
-        var methodInfo = systemType.GetMethod("Tick");
-        SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
         var subscribeMethodInfo = typeof(EcsWorld).GetMethod(subscriptionMethodName).MakeGenericMethod(compType);
         subscribeMethodInfo.Invoke(_world, SubscribeReactionParams);
     }
