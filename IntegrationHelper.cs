@@ -9,7 +9,6 @@ using UnityEngine;
 public class InitSystemAttribute : Attribute { }
 public class UpdateSystemAttribute : Attribute { }
 public class FixedUpdateSystemAttribute : Attribute { }
-public class ObservableChangeAttribute : Attribute { }
 public class MutualyExclusiveAttribute : Attribute
 {
     public Type[] Exclusives;
@@ -19,7 +18,8 @@ public class MutualyExclusiveAttribute : Attribute
 public enum EReactionType
 {
     OnAdd,
-    OnRemove
+    OnRemove,
+    OnChange
 }
 public class ReactiveSystemAttribute : Attribute
 {
