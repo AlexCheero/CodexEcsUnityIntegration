@@ -1,21 +1,11 @@
-using Components;
 using ECS;
 using System;
 using System.Reflection;
-using Tags;
 using UnityEngine;
 
-public class EntityView : MonoBehaviour
+[CreateAssetMenu(fileName = "EntityPreset", menuName = "ECS/New entity preset", order = -1)]
+public class EntityPreset : ScriptableObject
 {
-    public Entity Entity { get; private set; }
-    private EcsWorld _world;
-    public int Id { get => Entity.GetId(); }
-    public int Version { get => Entity.GetVersion(); }
-
-#if DEBUG
-    public bool IsValid { get => _world.IsEntityValid(Entity); }
-#endif
-
     [SerializeField]
     private ComponentMeta[] _metas = new ComponentMeta[0];
 
@@ -29,7 +19,6 @@ public class EntityView : MonoBehaviour
             _metas[i] = _metas[i + 1];
         Array.Resize(ref _metas, newLength);
     }
-
     private bool HaveComponentWithName(string componentName)
     {
         foreach (var meta in _metas)
@@ -57,38 +46,21 @@ public class EntityView : MonoBehaviour
         return true;
     }
 
-    public bool AddUnityComponent(Component component)
-    {
-        var fullName = component.GetType().FullName;
-        if (HaveComponentWithName(fullName))
-            return false;
-
-        Array.Resize(ref _metas, _metas.Length + 1);
-        _metas[_metas.Length - 1] = new ComponentMeta
-        {
-            ComponentName = fullName,
-            UnityComponent = component
-        };
-        return true;
-    }
-
-    public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
-
     public ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
-        if (IsUnityComponent(compType) || compType == typeof(EntityPreset))
+        if (compType == typeof(EntityPreset))
             return null;
-        
+
         var fields = compType.GetFields();
         var result = new ComponentFieldMeta[fields.Length];
         for (int i = 0; i < fields.Length; i++)
         {
             var field = fields[i];
             var fieldType = field.FieldType;
-            if (!fieldType.IsValueType && !IsUnityComponent(fieldType) && (fieldType != typeof(EntityPreset)))
+            if (!fieldType.IsValueType && (fieldType != typeof(EntityPreset)))
             {
-                Debug.LogError("wrong component field type. fields should only be pods, derives UnityEngine.Component or be EntityPresets");
+                Debug.LogError("wrong component field type. fields should only be pods or derives UnityEngine.Component");
                 return new ComponentFieldMeta[0];
             }
 
@@ -108,10 +80,7 @@ public class EntityView : MonoBehaviour
     private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
-        _world = world;
-
-        var entityId = _world.Create();
-        Entity = _world.GetById(entityId);
+        var entityId = world.Create();
 
         MethodInfo addMethodInfo = typeof(EcsWorld).GetMethod("Add");
 
@@ -143,53 +112,13 @@ public class EntityView : MonoBehaviour
                     fieldInfo.SetValue(componentObj, value);
                 }
             }
-            AddParams[0] = Id;
+            AddParams[0] = entityId;
             AddParams[1] = componentObj;
 
             MethodInfo genAddMethodInfo = addMethodInfo.MakeGenericMethod(compType);
-            genAddMethodInfo.Invoke(_world, AddParams);
+            genAddMethodInfo.Invoke(world, AddParams);
         }
 
         return entityId;
-    }
-
-    public bool Have<T>() => _world.Have<T>(Id);
-    public ref T AddAndReturnRef<T>(T component = default) => ref _world.AddAndReturnRef(Id, component);
-    public void Add<T>(T component = default) => _world.Add<T>(Id, component);
-    public T GetEcsComponent<T>() => _world.GetComponent<T>(Id);
-    public ref T GetEcsComponentByRef<T>() => ref _world.GetComponentByRef<T>(Id);
-    public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
-
-    public void DeleteSelf()
-    {
-        _world.Delete(Id);
-        Destroy(gameObject);
-    }
-
-    void OnCollisionEnter(Collision collision)
-    {
-        var collidedView = collision.gameObject.GetComponent<EntityView>();
-        if (collidedView != null)
-        {
-            AddCollisionComponents(this, collidedView.Entity);
-            AddCollisionComponents(collidedView, Entity);
-        }
-        else
-        {
-            AddCollisionComponents(this, EntityExtension.NullEntity);
-        }
-    }
-
-    private static void AddCollisionComponents(EntityView view, Entity otherEntity)
-    {
-        if (view.Have<CollisionWith>())
-        {
-            if (view.Have<OverrideCollision>())
-                view.GetEcsComponentByRef<CollisionWith>().entity = otherEntity;
-        }
-        else
-        {
-            view.Add(new CollisionWith { entity = otherEntity });
-        }
     }
 }

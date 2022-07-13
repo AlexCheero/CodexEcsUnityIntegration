@@ -1,43 +1,21 @@
-using System;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
-
-//TODO: hide some components fields that shouldn't be visible in inspector such as AttackComponent.previousAttackTime
-//TODO: implement runtime fileds update
-//TODO: implement search bar for components
-[CustomEditor(typeof(EntityView))]
-public class EntityView_Inspector : Editor
+//TODO: almost everything is copied from EntityView_Inspector refactor
+[CustomEditor(typeof(EntityPreset))]
+public class EntityPreset_Inspector : Editor
 {
-    private const string UnityComponents = "UnityComponents";
-
     private static string[] componentTypeNames;
     private static string[] tagTypeNames;
 
-    private string[] _viewComponentTypeNames;
     private bool _addListExpanded;
 
-    private EntityView View { get => (EntityView)target; }
+    private EntityPreset View { get => (EntityPreset)target; }
 
-    public override VisualElement CreateInspectorGUI()
+    static EntityPreset_Inspector()
     {
-        //TODO: it doesn't get all the components. to get most of them EntityView script should
-        //      be the last script of GO, and still it can't get the EntityView script itself
-        var viewComponents = View.GetComponents<Component>();
-        var length = viewComponents.Length - 1;
-        _viewComponentTypeNames = new string[length];
-        for (int i = 0, j = 0; i < viewComponents.Length && j < length; i++, j++)
-            _viewComponentTypeNames[j] = viewComponents[i].GetType().FullName;
-
-        return base.CreateInspectorGUI();
-    }
-
-    static EntityView_Inspector()
-    {
-        componentTypeNames = IntegrationHelper.GetTypeNames<EntityView>((t) => t.Namespace == IntegrationHelper.Components);
-        tagTypeNames = IntegrationHelper.GetTypeNames<EntityView>((t) => t.Namespace == IntegrationHelper.Tags);
+        componentTypeNames = IntegrationHelper.GetTypeNames<EntityPreset>((t) => t.Namespace == IntegrationHelper.Components);
+        tagTypeNames = IntegrationHelper.GetTypeNames<EntityPreset>((t) => t.Namespace == IntegrationHelper.Tags);
     }
 
     public override void OnInspectorGUI()
@@ -50,12 +28,10 @@ public class EntityView_Inspector : Editor
         if (_addListExpanded)
         {
             EditorGUILayout.BeginVertical();
-                IntegrationHelper.DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent);
-                GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent);
-                GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(UnityComponents, _viewComponentTypeNames, OnAddComponent);
-                GUILayout.Space(10);
+            IntegrationHelper.DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent);
+            GUILayout.Space(10);
+            IntegrationHelper.DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent);
+            GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
 
@@ -82,19 +58,8 @@ public class EntityView_Inspector : Editor
     private void OnAddComponent(string componentName)
     {
         _addListExpanded = false;
-        var type = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.UnityComponent);
-        if (EntityView.IsUnityComponent(type))
-        {
-            MethodInfo getComponentInfo = typeof(EntityView).GetMethod("GetComponent", new Type[] { }).MakeGenericMethod(type);
-            var component = (Component)getComponentInfo.Invoke(View, null);
-            if (View.AddUnityComponent(component))
-                EditorUtility.SetDirty(target);
-        }
-        else
-        {
-            if (View.AddComponent(componentName))
-                EditorUtility.SetDirty(target);
-        }
+        if (View.AddComponent(componentName))
+            EditorUtility.SetDirty(target);
     }
 
     //TODO: implement drag'n'drop for components
