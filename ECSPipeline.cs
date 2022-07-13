@@ -94,7 +94,7 @@ public class ECSPipeline : MonoBehaviour
             var systemType = IntegrationHelper.GetTypeByName(names[i], EGatheredTypeCategory.System);
 #if DEBUG
             if (systemType == null)
-                throw new Exception("can't find system type");
+                throw new Exception("can't find system type " + names[i]);
 #endif
             systems[i] = (EcsSystem)Activator.CreateInstance(systemType, systemCtorParams);
         }
