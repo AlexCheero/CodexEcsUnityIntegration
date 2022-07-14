@@ -2,6 +2,7 @@ using ECS;
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [CustomEditor(typeof(ECSPipeline))]
 public class Pipeline_Inspector : Editor
@@ -17,9 +18,18 @@ public class Pipeline_Inspector : Editor
     private static string[] fixedUpdateSystemTypeNames;
     private static string[] reactiveSystemTypeNames;
 
+    private UnityEngine.Object[] systemScripts;
+
     private bool _addListExpanded;
 
     private ECSPipeline Pipeline { get => (ECSPipeline)target; }
+
+    public override VisualElement CreateInspectorGUI()
+    {
+        systemScripts = Resources.FindObjectsOfTypeAll(typeof(MonoScript));
+
+        return base.CreateInspectorGUI();
+    }
 
     static Pipeline_Inspector()
     {
@@ -58,16 +68,16 @@ public class Pipeline_Inspector : Editor
         if (_addListExpanded)
         {
             EditorGUILayout.BeginVertical();
-                IntegrationHelper.DrawAddList(InitSystems, initSystemTypeNames,
+                DrawAddList(InitSystems, initSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Init));
                 GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(UpdateSystems, updateSystemTypeNames,
+                DrawAddList(UpdateSystems, updateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Update));
                 GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(FixedSystems, fixedUpdateSystemTypeNames,
+                DrawAddList(FixedSystems, fixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
                 GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(ReactiveSystems, reactiveSystemTypeNames,
+                DrawAddList(ReactiveSystems, reactiveSystemTypeNames,
                         (name) => OnAddSystem(name, ESystemCategory.Reactive));
                 GUILayout.Space(10);
             EditorGUILayout.EndVertical();
@@ -77,6 +87,40 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.Update);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
         DrawSystemCategory(ESystemCategory.Reactive);
+    }
+
+    public void DrawAddList(string label, string[] systems, Action<string> onAdd)
+    {
+        EditorGUILayout.LabelField(label + ':');
+        GUILayout.Space(10);
+        foreach (var componentName in systems)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            //TODO: add lines between components for readability
+            //      or remove "+" button and make buttons with component names on it
+            EditorGUILayout.ObjectField(GetSystemScriptByName(componentName), typeof(MonoScript), false);
+            bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
+            if (tryAdd)
+                onAdd(componentName);
+
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    private MonoScript GetSystemScriptByName(string name)
+    {
+        MonoScript systemScript = null;
+        foreach (var script in systemScripts)
+        {
+            if (script.name == name)
+            {
+                systemScript = script as MonoScript;
+                break;
+            }
+        }
+
+        return systemScript;
     }
 
     private void DrawSystemCategory(ESystemCategory category)
@@ -117,7 +161,7 @@ public class Pipeline_Inspector : Editor
         {
             EditorGUILayout.BeginHorizontal();
 
-            EditorGUILayout.LabelField(systems[i]);
+            EditorGUILayout.ObjectField(GetSystemScriptByName(systems[i]), typeof(MonoScript), false);
             bool newState = EditorGUILayout.Toggle(switches[i]);
             if (newState != switches[i])
                 EditorUtility.SetDirty(target);
