@@ -138,4 +138,11 @@ public static class IntegrationHelper
 
         return null;
     }
+
+    public static bool IsSearchMatch(string searchString, string name)
+    {
+        if (searchString == null || searchString.Length == 0)
+            return true;
+        return name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
 }

@@ -21,6 +21,8 @@ public class Pipeline_Inspector : Editor
     private UnityEngine.Object[] systemScripts;
 
     private bool _addListExpanded;
+    private string _addSearch;
+    private string _addedSearch;
 
     private ECSPipeline Pipeline { get => (ECSPipeline)target; }
 
@@ -67,6 +69,7 @@ public class Pipeline_Inspector : Editor
             _addListExpanded = !_addListExpanded;
         if (_addListExpanded)
         {
+            _addSearch = EditorGUILayout.TextField(_addSearch);
             EditorGUILayout.BeginVertical();
                 DrawAddList(InitSystems, initSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Init));
@@ -83,6 +86,7 @@ public class Pipeline_Inspector : Editor
             EditorGUILayout.EndVertical();
         }
 
+        _addedSearch = EditorGUILayout.TextField(_addedSearch);
         DrawSystemCategory(ESystemCategory.Init);
         DrawSystemCategory(ESystemCategory.Update);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
@@ -93,16 +97,19 @@ public class Pipeline_Inspector : Editor
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
-        foreach (var componentName in systems)
+        foreach (var systemName in systems)
         {
+            if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName))
+                continue;
+
             EditorGUILayout.BeginHorizontal();
 
             //TODO: add lines between components for readability
             //      or remove "+" button and make buttons with component names on it
-            EditorGUILayout.ObjectField(GetSystemScriptByName(componentName), typeof(MonoScript), false);
+            EditorGUILayout.ObjectField(GetSystemScriptByName(systemName), typeof(MonoScript), false);
             bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
             if (tryAdd)
-                onAdd(componentName);
+                onAdd(systemName);
 
             EditorGUILayout.EndHorizontal();
         }
@@ -159,6 +166,9 @@ public class Pipeline_Inspector : Editor
 
         for (int i = 0; i < systems.Length; i++)
         {
+            if (!IntegrationHelper.IsSearchMatch(_addedSearch, systems[i]))
+                continue;
+
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.ObjectField(GetSystemScriptByName(systems[i]), typeof(MonoScript), false);
