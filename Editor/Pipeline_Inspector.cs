@@ -8,10 +8,10 @@ using UnityEngine.UIElements;
 public class Pipeline_Inspector : Editor
 {
     //add more system types if needed
-    private const string InitSystems = "Init Systems";
-    private const string UpdateSystems = "Update Systems";
-    private const string FixedSystems = "Fixed Update Systems";
-    private const string ReactiveSystems = "Reactive Systems";
+    private const string InitSystemsLabel = "Init Systems";
+    private const string UpdateSystemsLabel = "Update Systems";
+    private const string FixedSystemsLabel = "Fixed Update Systems";
+    private const string ReactiveSystemsLabel = "Reactive Systems";
 
     private static string[] initSystemTypeNames;
     private static string[] updateSystemTypeNames;
@@ -24,7 +24,16 @@ public class Pipeline_Inspector : Editor
     private string _addSearch;
     private string _addedSearch;
 
-    private ECSPipeline Pipeline { get => (ECSPipeline)target; }
+    private ECSPipeline _pipeline;
+    private ECSPipeline Pipeline
+    {
+        get
+        {
+            if (_pipeline == null)
+                _pipeline = (ECSPipeline)target;
+            return _pipeline;
+        }
+    }
 
     public override VisualElement CreateInspectorGUI()
     {
@@ -71,16 +80,16 @@ public class Pipeline_Inspector : Editor
         {
             _addSearch = EditorGUILayout.TextField(_addSearch);
             EditorGUILayout.BeginVertical();
-                DrawAddList(InitSystems, initSystemTypeNames,
+                DrawAddList(InitSystemsLabel, initSystemTypeNames, Pipeline._initSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Init));
                 GUILayout.Space(10);
-                DrawAddList(UpdateSystems, updateSystemTypeNames,
+                DrawAddList(UpdateSystemsLabel, updateSystemTypeNames, Pipeline._updateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Update));
                 GUILayout.Space(10);
-                DrawAddList(FixedSystems, fixedUpdateSystemTypeNames,
+                DrawAddList(FixedSystemsLabel, fixedUpdateSystemTypeNames, Pipeline._fixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
                 GUILayout.Space(10);
-                DrawAddList(ReactiveSystems, reactiveSystemTypeNames,
+                DrawAddList(ReactiveSystemsLabel, reactiveSystemTypeNames, Pipeline._reactiveSystemTypeNames,
                         (name) => OnAddSystem(name, ESystemCategory.Reactive));
                 GUILayout.Space(10);
             EditorGUILayout.EndVertical();
@@ -93,13 +102,13 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.Reactive);
     }
 
-    public void DrawAddList(string label, string[] systems, Action<string> onAdd)
+    public void DrawAddList(string label, string[] systems, string[] except, Action<string> onAdd)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
         foreach (var systemName in systems)
         {
-            if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName))
+            if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || IntegrationHelper.ShouldSkipItem(systemName, except))
                 continue;
 
             EditorGUILayout.BeginHorizontal();
@@ -132,27 +141,26 @@ public class Pipeline_Inspector : Editor
 
     private void DrawSystemCategory(ESystemCategory category)
     {
-        var pipeline = Pipeline;
         string[] systems;
         bool[] switches;
         //TODO: this switch duplicated in ECSPipeline, refactor
         switch (category)
         {
             case ESystemCategory.Init:
-                systems = pipeline._initSystemTypeNames;
-                switches = pipeline._initSwitches;
+                systems = Pipeline._initSystemTypeNames;
+                switches = Pipeline._initSwitches;
                 break;
             case ESystemCategory.Update:
-                systems = pipeline._updateSystemTypeNames;
-                switches = pipeline._updateSwitches;
+                systems = Pipeline._updateSystemTypeNames;
+                switches = Pipeline._updateSwitches;
                 break;
             case ESystemCategory.FixedUpdate:
-                systems = pipeline._fixedUpdateSystemTypeNames;
-                switches = pipeline._fixedUpdateSwitches;
+                systems = Pipeline._fixedUpdateSystemTypeNames;
+                switches = Pipeline._fixedUpdateSwitches;
                 break;
             case ESystemCategory.Reactive:
-                systems = pipeline._reactiveSystemTypeNames;
-                switches = pipeline._reactiveSwitches;
+                systems = Pipeline._reactiveSystemTypeNames;
+                switches = Pipeline._reactiveSwitches;
                 break;
             default:
                 return;

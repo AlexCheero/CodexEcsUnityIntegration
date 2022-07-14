@@ -81,13 +81,13 @@ public static class IntegrationHelper
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
 
-    public static void DrawAddList(string label, string[] components, Action<string> onAdd, string search)
+    public static void DrawAddList(string label, string[] components, string[] except, Action<string> onAdd, string search)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
         foreach (var componentName in components)
         {
-            if (!IsSearchMatch(search, componentName))
+            if (!IsSearchMatch(search, componentName) || ShouldSkipItem(componentName, except))
                 continue;
 
             EditorGUILayout.BeginHorizontal();
@@ -147,5 +147,15 @@ public static class IntegrationHelper
         if (searchString == null || searchString.Length == 0)
             return true;
         return name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    public static bool ShouldSkipItem(string item, string[] skippedItems)
+    {
+        foreach (var skippedItem in skippedItems)
+        {
+            if (item == skippedItem)
+                return true;
+        }
+        return false;
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,7 +13,16 @@ public class EntityPreset_Inspector : Editor
     private string _addSearch;
     private string _addedSearch;
 
-    private EntityPreset View { get => (EntityPreset)target; }
+    private EntityPreset _view;
+    private EntityPreset View
+    {
+        get
+        {
+            if (_view == null)
+                _view = (EntityPreset)target;
+            return _view;
+        }
+    }
 
     static EntityPreset_Inspector()
     {
@@ -31,35 +41,66 @@ public class EntityPreset_Inspector : Editor
         {
             _addSearch = EditorGUILayout.TextField(_addSearch);
             EditorGUILayout.BeginVertical();
-            IntegrationHelper.DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent, _addSearch);
+            DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent, _addSearch);
             GUILayout.Space(10);
-            IntegrationHelper.DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent, _addSearch);
+            DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent, _addSearch);
             GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
 
-        var view = View;
         _addedSearch = EditorGUILayout.TextField(_addedSearch);
-        for (int i = 0; i < view.MetasLength; i++)
+        for (int i = 0; i < View.MetasLength; i++)
         {
-            if (!IntegrationHelper.IsSearchMatch(_addedSearch, view.GetMeta(i).ComponentName))
+            if (!IntegrationHelper.IsSearchMatch(_addedSearch, View.GetMeta(i).ComponentName))
                 continue;
 
             EditorGUILayout.BeginHorizontal();
 
-            DrawComponent(ref view.GetMeta(i));
+            DrawComponent(ref View.GetMeta(i));
 
             //TODO: delete button moves outside of the screen when foldout is expanded
             //component delete button
             if (GUILayout.Button(new GUIContent("-"), GUILayout.ExpandWidth(false)))
             {
-                view.RemoveMetaAt(i);
+                View.RemoveMetaAt(i);
                 i--;
                 EditorUtility.SetDirty(target);
             }
 
             EditorGUILayout.EndHorizontal();
         }
+    }
+
+    private void DrawAddList(string label, string[] components, Action<string> onAdd, string search)
+    {
+        EditorGUILayout.LabelField(label + ':');
+        GUILayout.Space(10);
+        foreach (var componentName in components)
+        {
+            if (!IntegrationHelper.IsSearchMatch(search, componentName) || ShouldSkipComponent(componentName))
+                continue;
+
+            EditorGUILayout.BeginHorizontal();
+
+            //TODO: add lines between components for readability
+            //      or remove "+" button and make buttons with component names on it
+            EditorGUILayout.LabelField(IntegrationHelper.GetTypeUIName(componentName));
+            bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
+            if (tryAdd)
+                onAdd(componentName);
+
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    private bool ShouldSkipComponent(string component)
+    {
+        for (int i = 0; i < View.MetasLength; i++)
+        {
+            if (component == View.GetMeta(i).ComponentName)
+                return true;
+        }
+        return false;
     }
 
     private void OnAddComponent(string componentName)
