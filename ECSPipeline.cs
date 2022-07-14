@@ -227,6 +227,8 @@ public class ECSPipeline : MonoBehaviour
                 return Move(idx, up, _updateSystemTypeNames, _updateSwitches);
             case ESystemCategory.FixedUpdate:
                 return Move(idx, up, _fixedUpdateSystemTypeNames, _fixedUpdateSwitches);
+            case ESystemCategory.Reactive:
+                return Move(idx, up, _reactiveSystemTypeNames, _reactiveSwitches);
             default:
                 return false;
         }

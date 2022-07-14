@@ -173,18 +173,15 @@ public class Pipeline_Inspector : Editor
                 EditorUtility.SetDirty(target);
             }
 
-            if (category != ESystemCategory.Reactive)
+            if (GUILayout.Button(new GUIContent("^"), GUILayout.ExpandWidth(false)))
             {
-                if (GUILayout.Button(new GUIContent("^"), GUILayout.ExpandWidth(false)))
-                {
-                    if (Pipeline.Move(category, i, true))
-                        EditorUtility.SetDirty(target);
-                }
-                if (GUILayout.Button(new GUIContent("v"), GUILayout.ExpandWidth(false)))
-                {
-                    if (Pipeline.Move(category, i, false))
-                        EditorUtility.SetDirty(target);
-                }
+                if (Pipeline.Move(category, i, true))
+                    EditorUtility.SetDirty(target);
+            }
+            if (GUILayout.Button(new GUIContent("v"), GUILayout.ExpandWidth(false)))
+            {
+                if (Pipeline.Move(category, i, false))
+                    EditorUtility.SetDirty(target);
             }
 
             EditorGUILayout.EndHorizontal();
