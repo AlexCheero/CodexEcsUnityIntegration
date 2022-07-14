@@ -18,6 +18,8 @@ public class EntityView_Inspector : Editor
 
     private string[] _viewComponentTypeNames;
     private bool _addListExpanded;
+    private string _addSearch;
+    private string _addedSearch;
 
     private EntityView View { get => (EntityView)target; }
 
@@ -49,19 +51,24 @@ public class EntityView_Inspector : Editor
             _addListExpanded = !_addListExpanded;
         if (_addListExpanded)
         {
+            _addSearch = EditorGUILayout.TextField(_addSearch);
             EditorGUILayout.BeginVertical();
-                IntegrationHelper.DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent);
+                IntegrationHelper.DrawAddList(IntegrationHelper.Components, componentTypeNames, OnAddComponent, _addSearch);
                 GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent);
+                IntegrationHelper.DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent, _addSearch);
                 GUILayout.Space(10);
-                IntegrationHelper.DrawAddList(UnityComponents, _viewComponentTypeNames, OnAddComponent);
+                IntegrationHelper.DrawAddList(UnityComponents, _viewComponentTypeNames, OnAddComponent, _addSearch);
                 GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
 
         var view = View;
+        _addedSearch = EditorGUILayout.TextField(_addedSearch);
         for (int i = 0; i < view.MetasLength; i++)
         {
+            if (!IntegrationHelper.IsSearchMatch(_addedSearch, view.GetMeta(i).ComponentName))
+                continue;
+
             EditorGUILayout.BeginHorizontal();
 
             DrawComponent(ref view.GetMeta(i));

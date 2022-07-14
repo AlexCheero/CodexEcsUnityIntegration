@@ -81,12 +81,15 @@ public static class IntegrationHelper
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
 
-    public static void DrawAddList(string label, string[] components, Action<string> onAdd)
+    public static void DrawAddList(string label, string[] components, Action<string> onAdd, string search)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
         foreach (var componentName in components)
         {
+            if (!IsSearchMatch(search, componentName))
+                continue;
+
             EditorGUILayout.BeginHorizontal();
 
             //TODO: add lines between components for readability
