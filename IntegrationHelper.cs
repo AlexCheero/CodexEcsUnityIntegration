@@ -38,7 +38,6 @@ public enum ESystemCategory
     Update,
     FixedUpdate,
     Reactive,
-    Max
 }
 
 public enum EGatheredTypeCategory
