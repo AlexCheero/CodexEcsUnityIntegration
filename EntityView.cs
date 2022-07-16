@@ -169,6 +169,16 @@ public class EntityView : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         var collidedView = collision.gameObject.GetComponent<EntityView>();
+        ProcessCollision(collidedView);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        ProcessCollision(other.GetComponent<EntityView>());
+    }
+
+    private void ProcessCollision(EntityView collidedView)
+    {
         if (collidedView != null)
         {
             AddCollisionComponents(this, collidedView.Entity);
