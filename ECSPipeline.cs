@@ -30,6 +30,27 @@ public class ECSPipeline : MonoBehaviour
     [SerializeField]
     public string[] _reactiveSystemTypeNames = new string[0];
 
+    private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
+    {
+        switch (category)
+        {
+            case ESystemCategory.Init:
+                return ref _initSystemTypeNames;
+            case ESystemCategory.Update:
+                return ref _updateSystemTypeNames;
+            case ESystemCategory.LateUpdate:
+                return ref _lateUpdateSystemTypeNames;
+            case ESystemCategory.FixedUpdate:
+                return ref _fixedUpdateSystemTypeNames;
+            case ESystemCategory.LateFixedUpdate:
+                return ref _lateFixedUpdateSystemTypeNames;
+            case ESystemCategory.Reactive:
+                return ref _reactiveSystemTypeNames;
+            default:
+                throw new Exception("category not implemented: " + category.ToString());
+        }
+    }
+
 #if UNITY_EDITOR
     [SerializeField]
     public bool[] _initSwitches = new bool[0];
@@ -41,9 +62,29 @@ public class ECSPipeline : MonoBehaviour
     public bool[] _fixedUpdateSwitches = new bool[0];
     [SerializeField]
     public bool[] _lateFixedUpdateSwitches = new bool[0];
-
     [SerializeField]
     public bool[] _reactiveSwitches = new bool[0];
+
+    private ref bool[] GetSystemSwitchesByCategory(ESystemCategory category)
+    {
+        switch (category)
+        {
+            case ESystemCategory.Init:
+                return ref _initSwitches;
+            case ESystemCategory.Update:
+                return ref _updateSwitches;
+            case ESystemCategory.LateUpdate:
+                return ref _lateUpdateSwitches;
+            case ESystemCategory.FixedUpdate:
+                return ref _fixedUpdateSwitches;
+            case ESystemCategory.LateFixedUpdate:
+                return ref _lateFixedUpdateSwitches;
+            case ESystemCategory.Reactive:
+                return ref _reactiveSwitches;
+            default:
+                throw new Exception("category not implemented: " + category.ToString());
+        }
+    }
 #endif
 
     void Start()
@@ -104,13 +145,16 @@ public class ECSPipeline : MonoBehaviour
     private readonly WaitForFixedUpdate _waitForFixedUpdate = new WaitForFixedUpdate();
     private IEnumerator LateFixedUpdate()
     {
-        yield return _waitForFixedUpdate;
+        while (true)
+        {
+            yield return _waitForFixedUpdate;
 
 #if UNITY_EDITOR
-        TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
+            TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
 #else
-        TickSystemCategory(_lateFixedUpdateSystems);
+            TickSystemCategory(_lateFixedUpdateSystems);
 #endif
+        }
     }
 
 #if UNITY_EDITOR
@@ -207,19 +251,9 @@ public class ECSPipeline : MonoBehaviour
 #if UNITY_EDITOR
     public bool AddSystem(string systemName, ESystemCategory systemCategory)
     {
-        switch (systemCategory)
-        {
-            case ESystemCategory.Init:
-                return AddSystem(systemName, ref _initSystemTypeNames, ref _initSwitches);
-            case ESystemCategory.Update:
-                return AddSystem(systemName, ref _updateSystemTypeNames, ref _updateSwitches);
-            case ESystemCategory.FixedUpdate:
-                return AddSystem(systemName, ref _fixedUpdateSystemTypeNames, ref _fixedUpdateSwitches);
-            case ESystemCategory.Reactive:
-                return AddSystem(systemName, ref _reactiveSystemTypeNames, ref _reactiveSwitches);
-            default:
-                return false;
-        }
+        ref var systemNames = ref GetSystemTypeNamesByCategory(systemCategory);
+        ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
+        return AddSystem(systemName, ref systemNames, ref switches);
     }
 
     private bool AddSystem(string systemName, ref string[] systems, ref bool[] switches)
@@ -238,21 +272,9 @@ public class ECSPipeline : MonoBehaviour
 
     public void RemoveMetaAt(ESystemCategory systemCategory, int idx)
     {
-        switch (systemCategory)
-        {
-            case ESystemCategory.Init:
-                RemoveMetaAt(idx, ref _initSystemTypeNames, ref _initSwitches);
-                break;
-            case ESystemCategory.Update:
-                RemoveMetaAt(idx, ref _updateSystemTypeNames, ref _updateSwitches);
-                break;
-            case ESystemCategory.FixedUpdate:
-                RemoveMetaAt(idx, ref _fixedUpdateSystemTypeNames, ref _fixedUpdateSwitches);
-                break;
-            case ESystemCategory.Reactive:
-                RemoveMetaAt(idx, ref _reactiveSystemTypeNames, ref _reactiveSwitches);
-                break;
-        }
+        ref var systemNames = ref GetSystemTypeNamesByCategory(systemCategory);
+        ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
+        RemoveMetaAt(idx, ref systemNames, ref switches);
     }
 
     private void RemoveMetaAt(int idx, ref string[] systems, ref bool[] switches)
@@ -268,19 +290,9 @@ public class ECSPipeline : MonoBehaviour
 
     public bool Move(ESystemCategory systemCategory, int idx, bool up)
     {
-        switch (systemCategory)
-        {
-            case ESystemCategory.Init:
-                return Move(idx, up, _initSystemTypeNames, _initSwitches);
-            case ESystemCategory.Update:
-                return Move(idx, up, _updateSystemTypeNames, _updateSwitches);
-            case ESystemCategory.FixedUpdate:
-                return Move(idx, up, _fixedUpdateSystemTypeNames, _fixedUpdateSwitches);
-            case ESystemCategory.Reactive:
-                return Move(idx, up, _reactiveSystemTypeNames, _reactiveSwitches);
-            default:
-                return false;
-        }
+        var systemNames = GetSystemTypeNamesByCategory(systemCategory);
+        var switches = GetSystemSwitchesByCategory(systemCategory);
+        return Move(idx, up, systemNames, switches);
     }
 
     private bool Move(int idx, bool up, string[] systems, bool[] switches)
