@@ -62,24 +62,19 @@ public class Pipeline_Inspector : Editor
             if (!t.IsSubclassOf(typeof(EcsSystem)))
                 continue;
             var attribute = t.GetCustomAttribute<SystemAttribute>();
-            var category = attribute != null ? attribute.Category : ESystemCategory.Update;
-            switch (category)
+            var categories = attribute != null ? attribute.Categories : new[] { ESystemCategory.Update };
+            foreach (var category in categories)
             {
-                case ESystemCategory.Init:
+                if (category == ESystemCategory.Init)
                     initSystemTypeNames.Add(t.FullName);
-                    break;
-                case ESystemCategory.Update:
+                if (category == ESystemCategory.Update)
                     updateSystemTypeNames.Add(t.FullName);
-                    break;
-                case ESystemCategory.LateUpdate:
+                if (category == ESystemCategory.LateUpdate)
                     lateUpdateSystemTypeNames.Add(t.FullName);
-                    break;
-                case ESystemCategory.FixedUpdate:
+                if (category == ESystemCategory.FixedUpdate)
                     fixedUpdateSystemTypeNames.Add(t.FullName);
-                    break;
-                case ESystemCategory.LateFixedUpdate:
+                if (category == ESystemCategory.LateFixedUpdate)
                     lateFixedUpdateSystemTypeNames.Add(t.FullName);
-                    break;
             }
         }
 

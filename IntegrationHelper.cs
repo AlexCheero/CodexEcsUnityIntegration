@@ -8,8 +8,8 @@ using UnityEngine;
 
 public class SystemAttribute : Attribute
 {
-    public ESystemCategory Category { get; private set; }
-    public SystemAttribute(ESystemCategory category) => Category = category;
+    public ESystemCategory[] Categories;
+    public SystemAttribute(params ESystemCategory[] categories) => Categories = categories;
 }
 
 public class MutualyExclusiveAttribute : Attribute
