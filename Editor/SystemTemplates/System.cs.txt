@@ -1,6 +1,7 @@
 using ECS;
 
-[UpdateSystem]
+//choose system type here
+[System(ESystemCategory.Update)]
 public class #SCRIPTNAME# : EcsSystem
 {
     private int _filterId;

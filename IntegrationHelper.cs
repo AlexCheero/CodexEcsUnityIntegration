@@ -6,9 +6,12 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-public class InitSystemAttribute : Attribute { }
-public class UpdateSystemAttribute : Attribute { }
-public class FixedUpdateSystemAttribute : Attribute { }
+public class SystemAttribute : Attribute
+{
+    public ESystemCategory Category { get; private set; }
+    public SystemAttribute(ESystemCategory category) => Category = category;
+}
+
 public class MutualyExclusiveAttribute : Attribute
 {
     public Type[] Exclusives;
@@ -34,11 +37,12 @@ public class ReactiveSystemAttribute : Attribute
 
 public enum ESystemCategory
 {
-    Init = 0,
+    Init,
     Update,
+    LateUpdate,
     FixedUpdate,
+    LateFixedUpdate,
     Reactive,
-    Max
 }
 
 public enum EGatheredTypeCategory

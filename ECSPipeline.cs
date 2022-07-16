@@ -1,6 +1,7 @@
 using Components;
 using ECS;
 using System;
+using System.Collections;
 using System.Reflection;
 using UnityEngine;
 
@@ -11,7 +12,9 @@ public class ECSPipeline : MonoBehaviour
     
     private EcsSystem[] _initSystems;
     private EcsSystem[] _updateSystems;
+    private EcsSystem[] _lateUpdateSystems;
     private EcsSystem[] _fixedUpdateSystems;
+    private EcsSystem[] _lateFixedUpdateSystems;//use for physics cleanup
 
     //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
     [SerializeField]
@@ -19,7 +22,11 @@ public class ECSPipeline : MonoBehaviour
     [SerializeField]
     public string[] _updateSystemTypeNames = new string[0];
     [SerializeField]
+    public string[] _lateUpdateSystemTypeNames = new string[0];
+    [SerializeField]
     public string[] _fixedUpdateSystemTypeNames = new string[0];
+    [SerializeField]
+    public string[] _lateFixedUpdateSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _reactiveSystemTypeNames = new string[0];
 
@@ -29,7 +36,12 @@ public class ECSPipeline : MonoBehaviour
     [SerializeField]
     public bool[] _updateSwitches = new bool[0];
     [SerializeField]
+    public bool[] _lateUpdateSwitches = new bool[0];
+    [SerializeField]
     public bool[] _fixedUpdateSwitches = new bool[0];
+    [SerializeField]
+    public bool[] _lateFixedUpdateSwitches = new bool[0];
+
     [SerializeField]
     public bool[] _reactiveSwitches = new bool[0];
 #endif
@@ -41,7 +53,9 @@ public class ECSPipeline : MonoBehaviour
         var systemCtorParams = new object[] { _world };
         _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams);
         _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams);
+        _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams);
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
+        _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
         foreach (var systemName in _reactiveSystemTypeNames)
             SubscribeReactiveSystem(systemName);
 
@@ -56,6 +70,8 @@ public class ECSPipeline : MonoBehaviour
 #else
         TickSystemCategory(_initSystems);
 #endif
+
+        StartCoroutine(LateFixedUpdate());
     }
 
     void Update()
@@ -67,12 +83,45 @@ public class ECSPipeline : MonoBehaviour
 #endif
     }
 
+    void LateUpdate()
+    {
+#if UNITY_EDITOR
+        TickSystemCategory(_lateUpdateSystems, _lateUpdateSwitches);
+#else
+        TickSystemCategory(_lateUpdateSystems);
+#endif
+    }
+
+    void FixedUpdate()
+    {
+#if UNITY_EDITOR
+        TickSystemCategory(_fixedUpdateSystems, _fixedUpdateSwitches);
+#else
+        TickSystemCategory(_fixedUpdateSystems);
+#endif
+    }
+
+    private readonly WaitForFixedUpdate _waitForFixedUpdate = new WaitForFixedUpdate();
+    private IEnumerator LateFixedUpdate()
+    {
+        yield return _waitForFixedUpdate;
+
+#if UNITY_EDITOR
+        TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
+#else
+        TickSystemCategory(_lateFixedUpdateSystems);
+#endif
+    }
+
 #if UNITY_EDITOR
     private void TickSystemCategory(EcsSystem[] systems, bool[] switches)
 #else
     private void TickSystemCategory(EcsSystem[] systems)
 #endif
     {
+        if (systems == null)
+            return;
+
         for (int i = 0; i < systems.Length; i++)
         {
 #if UNITY_EDITOR

@@ -1,5 +1,8 @@
 using ECS;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -10,13 +13,17 @@ public class Pipeline_Inspector : Editor
     //add more system types if needed
     private const string InitSystemsLabel = "Init Systems";
     private const string UpdateSystemsLabel = "Update Systems";
+    private const string LateUpdateSystemsLabel = "Late Update Systems";
     private const string FixedSystemsLabel = "Fixed Update Systems";
+    private const string LateFixedSystemsLabel = "Late Fixed Update Systems";
     private const string ReactiveSystemsLabel = "Reactive Systems";
 
-    private static string[] initSystemTypeNames;
-    private static string[] updateSystemTypeNames;
-    private static string[] fixedUpdateSystemTypeNames;
-    private static string[] reactiveSystemTypeNames;
+    private static List<string> initSystemTypeNames;
+    private static List<string> updateSystemTypeNames;
+    private static List<string> lateUpdateSystemTypeNames;
+    private static List<string> fixedUpdateSystemTypeNames;
+    private static List<string> lateFixedUpdateSystemTypeNames;
+    private static List<string> reactiveSystemTypeNames;
 
     private UnityEngine.Object[] systemScripts;
 
@@ -44,32 +51,41 @@ public class Pipeline_Inspector : Editor
 
     static Pipeline_Inspector()
     {
-        initSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
-            (t) => IsSystemType(t) && IntegrationHelper.HaveAttribute<InitSystemAttribute>(t));
+        initSystemTypeNames = new List<string>();
+        updateSystemTypeNames = new List<string>();
+        lateUpdateSystemTypeNames = new List<string>();
+        fixedUpdateSystemTypeNames = new List<string>();
+        lateFixedUpdateSystemTypeNames = new List<string>();
 
-        updateSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
-            //basically consider system without attribute as update system is added only for consistency
-            (t) =>
+        foreach (var t in Assembly.GetAssembly(typeof(EcsSystem)).GetTypes())
+        {
+            if (!t.IsSubclassOf(typeof(EcsSystem)))
+                continue;
+            var attribute = t.GetCustomAttribute<SystemAttribute>();
+            var category = attribute != null ? attribute.Category : ESystemCategory.Update;
+            switch (category)
             {
-                if (!IsSystemType(t))
-                    return false;
-
-                if (IntegrationHelper.HaveAttribute<UpdateSystemAttribute>(t))
-                    return true;
-
-                var haveNoOtherAttributes = !IntegrationHelper.HaveAttribute<InitSystemAttribute>(t);
-                haveNoOtherAttributes &= !IntegrationHelper.HaveAttribute<FixedUpdateSystemAttribute>(t);
-                return haveNoOtherAttributes;
-            });
-
-        fixedUpdateSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
-            (t) => IsSystemType(t) && IntegrationHelper.HaveAttribute<FixedUpdateSystemAttribute>(t));
+                case ESystemCategory.Init:
+                    initSystemTypeNames.Add(t.FullName);
+                    break;
+                case ESystemCategory.Update:
+                    updateSystemTypeNames.Add(t.FullName);
+                    break;
+                case ESystemCategory.LateUpdate:
+                    lateUpdateSystemTypeNames.Add(t.FullName);
+                    break;
+                case ESystemCategory.FixedUpdate:
+                    fixedUpdateSystemTypeNames.Add(t.FullName);
+                    break;
+                case ESystemCategory.LateFixedUpdate:
+                    lateFixedUpdateSystemTypeNames.Add(t.FullName);
+                    break;
+            }
+        }
 
         reactiveSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
-            (t) => IntegrationHelper.HaveAttribute<ReactiveSystemAttribute>(t));
+            (t) => IntegrationHelper.HaveAttribute<ReactiveSystemAttribute>(t)).ToList();
     }
-
-    private static bool IsSystemType(Type type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type);
 
     public override void OnInspectorGUI()
     {
@@ -82,27 +98,29 @@ public class Pipeline_Inspector : Editor
             EditorGUILayout.BeginVertical();
                 DrawAddList(InitSystemsLabel, initSystemTypeNames, Pipeline._initSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Init));
-                GUILayout.Space(10);
                 DrawAddList(UpdateSystemsLabel, updateSystemTypeNames, Pipeline._updateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.Update));
-                GUILayout.Space(10);
+                DrawAddList(LateUpdateSystemsLabel, lateUpdateSystemTypeNames, Pipeline._lateUpdateSystemTypeNames,
+                    (name) => OnAddSystem(name, ESystemCategory.LateUpdate));
                 DrawAddList(FixedSystemsLabel, fixedUpdateSystemTypeNames, Pipeline._fixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
-                GUILayout.Space(10);
+                DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystemTypeNames, Pipeline._lateFixedUpdateSystemTypeNames,
+                    (name) => OnAddSystem(name, ESystemCategory.LateFixedUpdate));
                 DrawAddList(ReactiveSystemsLabel, reactiveSystemTypeNames, Pipeline._reactiveSystemTypeNames,
                         (name) => OnAddSystem(name, ESystemCategory.Reactive));
-                GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
 
         _addedSearch = EditorGUILayout.TextField(_addedSearch);
         DrawSystemCategory(ESystemCategory.Init);
         DrawSystemCategory(ESystemCategory.Update);
+        DrawSystemCategory(ESystemCategory.LateUpdate);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
+        DrawSystemCategory(ESystemCategory.LateFixedUpdate);
         DrawSystemCategory(ESystemCategory.Reactive);
     }
 
-    public void DrawAddList(string label, string[] systems, string[] except, Action<string> onAdd)
+    public void DrawAddList(string label, List<string> systems, string[] except, Action<string> onAdd)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
@@ -122,6 +140,7 @@ public class Pipeline_Inspector : Editor
 
             EditorGUILayout.EndHorizontal();
         }
+        GUILayout.Space(10);
     }
 
     private MonoScript GetSystemScriptByName(string name)
@@ -154,9 +173,17 @@ public class Pipeline_Inspector : Editor
                 systems = Pipeline._updateSystemTypeNames;
                 switches = Pipeline._updateSwitches;
                 break;
+            case ESystemCategory.LateUpdate:
+                systems = Pipeline._lateUpdateSystemTypeNames;
+                switches = Pipeline._lateUpdateSwitches;
+                break;
             case ESystemCategory.FixedUpdate:
                 systems = Pipeline._fixedUpdateSystemTypeNames;
                 switches = Pipeline._fixedUpdateSwitches;
+                break;
+            case ESystemCategory.LateFixedUpdate:
+                systems = Pipeline._lateFixedUpdateSystemTypeNames;
+                switches = Pipeline._lateFixedUpdateSwitches;
                 break;
             case ESystemCategory.Reactive:
                 systems = Pipeline._reactiveSystemTypeNames;
@@ -208,7 +235,7 @@ public class Pipeline_Inspector : Editor
 
     private void OnAddSystem(string systemName, ESystemCategory systemCategory)
     {
-        _addListExpanded = false;
+        //_addListExpanded = false;
 
         var pipeline = Pipeline;
         if (pipeline.AddSystem(systemName, systemCategory))
