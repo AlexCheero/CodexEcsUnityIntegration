@@ -57,9 +57,9 @@ public class EntityView : MonoBehaviour
         return true;
     }
 
-    public bool AddUnityComponent(Component component)
+    public bool AddUnityComponent(Component component, Type asType)
     {
-        var fullName = component.GetType().FullName;
+        var fullName = asType.FullName;
         if (HaveComponentWithName(fullName))
             return false;
 

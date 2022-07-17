@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -16,7 +17,8 @@ public class EntityView_Inspector : Editor
     private static string[] componentTypeNames;
     private static string[] tagTypeNames;
 
-    private string[] _viewComponentTypeNames;
+    private List<List<string>> _viewComponentTypeNames;
+    private List<bool> _viewComponentFoldouts;
     private bool _addListExpanded;
     private string _addSearch;
     private string _addedSearch;
@@ -38,9 +40,20 @@ public class EntityView_Inspector : Editor
         //      be the last script of GO, and still it can't get the EntityView script itself
         var viewComponents = View.GetComponents<Component>();
         var length = viewComponents.Length - 1;
-        _viewComponentTypeNames = new string[length];
+        _viewComponentTypeNames = new List<List<string>>(length);
+        _viewComponentFoldouts = new List<bool>(length);
         for (int i = 0, j = 0; i < viewComponents.Length && j < length; i++, j++)
-            _viewComponentTypeNames[j] = viewComponents[i].GetType().FullName;
+        {
+            _viewComponentFoldouts.Add(false);
+            var subTypesList = new List<string>();
+            var subType = viewComponents[i].GetType();
+            while (subType != typeof(Component))
+            {
+                subTypesList.Add(subType.FullName);
+                subType = subType.BaseType;
+            }
+            _viewComponentTypeNames.Add(subTypesList);
+        }
 
         return base.CreateInspectorGUI();
     }
@@ -66,7 +79,7 @@ public class EntityView_Inspector : Editor
                 GUILayout.Space(10);
                 DrawAddList(IntegrationHelper.Tags, tagTypeNames, OnAddComponent, _addSearch);
                 GUILayout.Space(10);
-                DrawAddList(UnityComponents, _viewComponentTypeNames, OnAddComponent, _addSearch);
+                DrawAddUnityComponentList(UnityComponents, _viewComponentTypeNames, _viewComponentFoldouts, OnAddComponent, _addSearch);
                 GUILayout.Space(10);
             EditorGUILayout.EndVertical();
         }
@@ -100,7 +113,7 @@ public class EntityView_Inspector : Editor
         GUILayout.Space(10);
         foreach (var componentName in components)
         {
-            if (!IntegrationHelper.IsSearchMatch(search, componentName) || ShouldSkipComponent(componentName))
+            if (!IntegrationHelper.IsSearchMatch(search, componentName) || IsComponentAlreadyAdded(componentName))
                 continue;
 
             EditorGUILayout.BeginHorizontal();
@@ -108,15 +121,59 @@ public class EntityView_Inspector : Editor
             //TODO: add lines between components for readability
             //      or remove "+" button and make buttons with component names on it
             EditorGUILayout.LabelField(IntegrationHelper.GetTypeUIName(componentName));
-            bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
-            if (tryAdd)
+            if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
                 onAdd(componentName);
 
             EditorGUILayout.EndHorizontal();
         }
     }
 
-    private bool ShouldSkipComponent(string component)
+    private void DrawAddUnityComponentList(string label, List<List<string>> components, List<bool> foldouts, Action<string> onAdd, string search)
+    {
+        EditorGUILayout.LabelField(label + ':');
+        GUILayout.Space(10);
+        for (int i = 0; i < components.Count; i++)
+        {
+            var compSubTypes = components[i];
+            if (compSubTypes.Count == 0)
+                continue;
+
+
+            EditorGUILayout.BeginHorizontal();
+
+            foldouts[i] = EditorGUILayout.BeginFoldoutHeaderGroup(foldouts[i], IntegrationHelper.GetTypeUIName(compSubTypes[0]));
+            bool canAddFirstComponent =
+                IntegrationHelper.IsSearchMatch(search, compSubTypes[0]) && !IsComponentAlreadyAdded(compSubTypes[0]);
+            if (canAddFirstComponent && GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
+                onAdd(compSubTypes[0]);
+
+            EditorGUILayout.EndHorizontal();
+
+            if (foldouts[i])
+            {
+                for (int j = 1; j < compSubTypes.Count; j++)
+                {
+                    var componentName = compSubTypes[j];
+                    if (!IntegrationHelper.IsSearchMatch(search, componentName) || IsComponentAlreadyAdded(componentName))
+                        continue;
+
+                    EditorGUILayout.BeginHorizontal();
+
+                    //TODO: add lines between components for readability
+                    //      or remove "+" button and make buttons with component names on it
+                    EditorGUILayout.LabelField("add as " + IntegrationHelper.GetTypeUIName(componentName));
+                    if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
+                        onAdd(componentName);
+
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+    }
+
+    private bool IsComponentAlreadyAdded(string component)
     {
         for (int i = 0; i < View.MetasLength; i++)
         {
@@ -134,7 +191,7 @@ public class EntityView_Inspector : Editor
         {
             MethodInfo getComponentInfo = typeof(EntityView).GetMethod("GetComponent", new Type[] { }).MakeGenericMethod(type);
             var component = (Component)getComponentInfo.Invoke(View, null);
-            if (View.AddUnityComponent(component))
+            if (View.AddUnityComponent(component, type))
                 EditorUtility.SetDirty(target);
         }
         else
