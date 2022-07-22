@@ -129,7 +129,7 @@ public class EntityView : MonoBehaviour
                 compType = IntegrationHelper.GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
 #if DEBUG
                 if (compType == null)
-                    throw new Exception("can't find component type");
+                    throw new Exception("can't find component type " + meta.ComponentName);
 #endif
                 componentObj = Activator.CreateInstance(compType);
 
