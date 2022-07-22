@@ -22,22 +22,18 @@ public struct ComponentFieldMeta
             return isRepresentationNotEmpty ? float.Parse(ValueRepresentation, CultureInfo.InvariantCulture) : 0;
         else if (TypeName == typeof(Vector3).FullName)
             return isRepresentationNotEmpty ? ParseVector3(ValueRepresentation) : Vector3.zero;
+        else if (TypeName == typeof(string).FullName)
+            return ValueRepresentation;
+        else if (TypeName == typeof(string).FullName)
+            return ValueRepresentation;
+        else if (typeof(Component).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent)))
+            return UnityComponent;
+        else if (nameof(EntityPreset) == TypeName)
+            return Preset;
         else
         {
-            var type = IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent);
-            if (typeof(Component).IsAssignableFrom(type))
-            {
-                return UnityComponent;
-            }
-            else if (nameof(EntityPreset) == TypeName)
-            {
-                return Preset;
-            }
-            else
-            {
-                Debug.LogError("Wrong field meta Type");
-                return null;
-            }
+            Debug.LogError("Wrong field meta Type: " + TypeName);
+            return null;
         }
     }
 
@@ -61,21 +57,21 @@ public struct ComponentFieldMeta
             var vec = (Vector3)value;
             ValueRepresentation = vec.x + " " + vec.y + " " + vec.z;
         }
+        else if (TypeName == typeof(string).FullName)
+        {
+            ValueRepresentation = (string)value;
+        }
+        else if(typeof(Component).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent)))
+        {
+            UnityComponent = (Component)value;
+        }
+        else if (nameof(EntityPreset) == TypeName)
+        {
+            Preset = (EntityPreset)value;
+        }
         else
         {
-            var type = IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent);
-            if (typeof(Component).IsAssignableFrom(type))
-            {
-                UnityComponent = (Component)value;
-            }
-            else if (nameof(EntityPreset) == TypeName)
-            {
-                Preset = (EntityPreset)value;
-            }
-            else
-            {
-                Debug.LogError("Wrong field meta Type");
-            }
+            Debug.LogError("Wrong field meta Type " + TypeName);
         }
 
         return previousRepresentation != ValueRepresentation || previousComponent != UnityComponent || previousPreset != Preset;

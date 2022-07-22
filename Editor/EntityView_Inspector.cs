@@ -246,6 +246,11 @@ public class EntityView_Inspector : Editor
                 var obj = valueObject != null ? (EntityPreset)valueObject : null;
                 setDirty = fieldMeta.SetValue(EditorGUILayout.ObjectField("", obj, typeof(EntityPreset), true));
             }
+            else if (fieldMeta.TypeName == typeof(string).FullName)
+            {
+                var str = valueObject as string;
+                setDirty = fieldMeta.SetValue(EditorGUILayout.TextField(str));
+            }
             else
             {
                 var type = IntegrationHelper.GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.UnityComponent);

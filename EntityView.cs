@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class EntityView : MonoBehaviour
 {
+    public static readonly Type[] AllowedFiledRefTypes = { typeof(EntityPreset), typeof(string) };
+
     public Entity Entity { get; private set; }
     private EcsWorld _world;
     public int Id { get => Entity.GetId(); }
@@ -86,7 +88,16 @@ public class EntityView : MonoBehaviour
         {
             var field = fields[i];
             var fieldType = field.FieldType;
-            if (!fieldType.IsValueType && !IsUnityComponent(fieldType) && (fieldType != typeof(EntityPreset)))
+            var isRefAllowed = false;
+            foreach (var type in AllowedFiledRefTypes)
+            {
+                if (fieldType == type)
+                {
+                    isRefAllowed = true;
+                    break;
+                }
+            }
+            if (!fieldType.IsValueType && !IsUnityComponent(fieldType) && !isRefAllowed)
             {
                 Debug.LogError("wrong component field type. fields should only be pods, derives UnityEngine.Component or be EntityPresets");
                 return new ComponentFieldMeta[0];

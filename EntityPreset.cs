@@ -58,7 +58,16 @@ public class EntityPreset : ScriptableObject
         {
             var field = fields[i];
             var fieldType = field.FieldType;
-            if (!fieldType.IsValueType && (fieldType != typeof(EntityPreset)))
+            var isRefAllowed = false;
+            foreach (var type in EntityView.AllowedFiledRefTypes)
+            {
+                if (fieldType == type)
+                {
+                    isRefAllowed = true;
+                    break;
+                }
+            }
+            if (!fieldType.IsValueType && !isRefAllowed)
             {
                 Debug.LogError("wrong component field type. fields should only be pods or derives UnityEngine.Component");
                 return new ComponentFieldMeta[0];
