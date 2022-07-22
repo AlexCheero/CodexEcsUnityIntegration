@@ -27,8 +27,6 @@ public class ECSPipeline : MonoBehaviour
     public string[] _fixedUpdateSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _lateFixedUpdateSystemTypeNames = new string[0];
-    [SerializeField]
-    public string[] _reactiveSystemTypeNames = new string[0];
 
     private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
     {
@@ -44,8 +42,6 @@ public class ECSPipeline : MonoBehaviour
                 return ref _fixedUpdateSystemTypeNames;
             case ESystemCategory.LateFixedUpdate:
                 return ref _lateFixedUpdateSystemTypeNames;
-            case ESystemCategory.Reactive:
-                return ref _reactiveSystemTypeNames;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -62,8 +58,6 @@ public class ECSPipeline : MonoBehaviour
     public bool[] _fixedUpdateSwitches = new bool[0];
     [SerializeField]
     public bool[] _lateFixedUpdateSwitches = new bool[0];
-    [SerializeField]
-    public bool[] _reactiveSwitches = new bool[0];
 
     private ref bool[] GetSystemSwitchesByCategory(ESystemCategory category)
     {
@@ -79,8 +73,6 @@ public class ECSPipeline : MonoBehaviour
                 return ref _fixedUpdateSwitches;
             case ESystemCategory.LateFixedUpdate:
                 return ref _lateFixedUpdateSwitches;
-            case ESystemCategory.Reactive:
-                return ref _reactiveSwitches;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -97,8 +89,6 @@ public class ECSPipeline : MonoBehaviour
         _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams);
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
-        foreach (var systemName in _reactiveSystemTypeNames)
-            SubscribeReactiveSystem(systemName);
 
         SetMutuallyExclusiveComponents();
 
@@ -193,42 +183,6 @@ public class ECSPipeline : MonoBehaviour
         }
 
         return systems;
-    }
-
-    private static readonly object[] SubscribeReactionParams = { null };
-    private void SubscribeReactiveSystem(string name)
-    {
-        var systemType = IntegrationHelper.GetTypeByName(name, EGatheredTypeCategory.ReactiveSystem);
-        var attribute = systemType.GetCustomAttribute<ReactiveSystemAttribute>(true);
-        var responseType = attribute.ResponseType;
-        var compType = attribute.ComponentType;
-        string subscriptionMethodName;
-
-        var methodInfo = systemType.GetMethod("Tick");
-        //TODO: add default cases to all other switches in integration
-        switch (responseType)
-        {
-            case EReactionType.OnAdd:
-                subscriptionMethodName = "SubscribeOnAdd";
-                SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
-                break;
-            case EReactionType.OnRemove:
-                subscriptionMethodName = "SubscribeOnRemove";
-                SubscribeReactionParams[0] = Delegate.CreateDelegate(typeof(EcsWorld.OnAddRemoveHandler), methodInfo);
-                break;
-            case EReactionType.OnChange:
-                subscriptionMethodName = "SubscribeOnChange";
-                var generalType = typeof(EcsWorld.OnChangedHandler<>.Handler);
-                var realType = generalType.MakeGenericType(compType);
-                SubscribeReactionParams[0] = Delegate.CreateDelegate(realType, methodInfo);
-                break;
-            default:
-                Debug.LogError("unknown response type for system " + name);
-                return;
-        }
-
-        var subscribeMethodInfo = typeof(EcsWorld).GetMethod(subscriptionMethodName).MakeGenericMethod(compType);
-        subscribeMethodInfo.Invoke(_world, SubscribeReactionParams);
     }
 
     private void SetMutuallyExclusiveComponents()

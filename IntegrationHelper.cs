@@ -24,16 +24,6 @@ public enum EReactionType
     OnRemove,
     OnChange
 }
-public class ReactiveSystemAttribute : Attribute
-{
-    public EReactionType ResponseType;
-    public Type ComponentType;
-    public ReactiveSystemAttribute(EReactionType responseType, Type componentType)
-    {
-        ResponseType = responseType;
-        ComponentType = componentType;
-    }
-}
 
 public class HiddenInspector : Attribute { }
 public class DefaultValue : Attribute
@@ -49,15 +39,13 @@ public enum ESystemCategory
     LateUpdate,
     FixedUpdate,
     LateFixedUpdate,
-    Reactive,
 }
 
 public enum EGatheredTypeCategory
 {
     EcsComponent,
     UnityComponent,
-    System,
-    ReactiveSystem
+    System
 }
 
 public static class IntegrationHelper
@@ -69,7 +57,6 @@ public static class IntegrationHelper
     public static Type[] EcsComponentTypes;
     public static Type[] UnityComponentTypes;
     public static Type[] SystemTypes;
-    public static Type[] ReactiveSystemTypes;
 
     static IntegrationHelper()
     {
@@ -85,9 +72,6 @@ public static class IntegrationHelper
         SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
             //TODO: duplicated from Pipeline_Inspector move to helper class
             .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToArray();
-
-        ReactiveSystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
-            .Where((type) => HaveAttribute<ReactiveSystemAttribute>(type)).ToArray();
     }
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
@@ -136,9 +120,6 @@ public static class IntegrationHelper
                 break;
             case EGatheredTypeCategory.System:
                 types = SystemTypes;
-                break;
-            case EGatheredTypeCategory.ReactiveSystem:
-                types = ReactiveSystemTypes;
                 break;
             default:
                 return null;

@@ -23,7 +23,6 @@ public class Pipeline_Inspector : Editor
     private static List<string> lateUpdateSystemTypeNames;
     private static List<string> fixedUpdateSystemTypeNames;
     private static List<string> lateFixedUpdateSystemTypeNames;
-    private static List<string> reactiveSystemTypeNames;
 
     private UnityEngine.Object[] systemScripts;
 
@@ -77,9 +76,6 @@ public class Pipeline_Inspector : Editor
                     lateFixedUpdateSystemTypeNames.Add(t.FullName);
             }
         }
-
-        reactiveSystemTypeNames = IntegrationHelper.GetTypeNames<ECSPipeline>(
-            (t) => IntegrationHelper.HaveAttribute<ReactiveSystemAttribute>(t)).ToList();
     }
 
     public override void OnInspectorGUI()
@@ -101,8 +97,6 @@ public class Pipeline_Inspector : Editor
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
                 DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystemTypeNames, Pipeline._lateFixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.LateFixedUpdate));
-                DrawAddList(ReactiveSystemsLabel, reactiveSystemTypeNames, Pipeline._reactiveSystemTypeNames,
-                        (name) => OnAddSystem(name, ESystemCategory.Reactive));
             EditorGUILayout.EndVertical();
         }
 
@@ -112,7 +106,6 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.LateUpdate);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
         DrawSystemCategory(ESystemCategory.LateFixedUpdate);
-        DrawSystemCategory(ESystemCategory.Reactive);
     }
 
     public void DrawAddList(string label, List<string> systems, string[] except, Action<string> onAdd)
@@ -179,10 +172,6 @@ public class Pipeline_Inspector : Editor
             case ESystemCategory.LateFixedUpdate:
                 systems = Pipeline._lateFixedUpdateSystemTypeNames;
                 switches = Pipeline._lateFixedUpdateSwitches;
-                break;
-            case ESystemCategory.Reactive:
-                systems = Pipeline._reactiveSystemTypeNames;
-                switches = Pipeline._reactiveSwitches;
                 break;
             default:
                 return;
