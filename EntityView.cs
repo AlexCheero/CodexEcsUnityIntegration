@@ -1,7 +1,5 @@
 using Components;
 using ECS;
-using System;
-using System.Reflection;
 using Tags;
 using UnityEngine;
 
@@ -19,53 +17,11 @@ public class EntityView : MonoBehaviour
     [SerializeField]
     public EntityMeta Data = new EntityMeta { Metas = new ComponentMeta[0] };
 
-    private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
         _world = world;
-
-        var entityId = _world.Create();
+        var entityId = IntegrationHelper.InitAsEntity(world, Data);
         Entity = _world.GetById(entityId);
-
-        MethodInfo addMethodInfo = typeof(EcsWorld).GetMethod("Add");
-
-        foreach (var meta in Data.Metas)
-        {
-            Type compType;
-            object componentObj;
-            if (meta.UnityComponent != null)
-            {
-                compType = meta.UnityComponent.GetType();
-                componentObj = meta.UnityComponent;
-            }
-            else
-            {
-                compType = IntegrationHelper.GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
-#if DEBUG
-                if (compType == null)
-                    throw new Exception("can't find component type " + meta.ComponentName);
-#endif
-                componentObj = Activator.CreateInstance(compType);
-
-                foreach (var field in meta.Fields)
-                {
-                    var fieldInfo = compType.GetField(field.Name);
-                    var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
-                    object defaultValue = defaultValueAttribute?.Value;
-                    var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
-                    if (value == null)
-                        continue;
-
-                    fieldInfo.SetValue(componentObj, value);
-                }
-            }
-            AddParams[0] = Id;
-            AddParams[1] = componentObj;
-
-            MethodInfo genAddMethodInfo = addMethodInfo.MakeGenericMethod(compType);
-            genAddMethodInfo.Invoke(_world, AddParams);
-        }
-
         return entityId;
     }
 

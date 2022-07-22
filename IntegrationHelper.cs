@@ -105,4 +105,51 @@ public static class IntegrationHelper
     }
 
     public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
+
+    private static readonly object[] AddParams = { null, null };
+    public static int InitAsEntity(EcsWorld world, in EntityMeta data)
+    {
+        var entityId = world.Create();
+
+        MethodInfo addMethodInfo = typeof(EcsWorld).GetMethod("Add");
+
+        foreach (var meta in data.Metas)
+        {
+            Type compType;
+            object componentObj;
+            if (meta.UnityComponent != null)
+            {
+                compType = meta.UnityComponent.GetType();
+                componentObj = meta.UnityComponent;
+            }
+            else
+            {
+                compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
+#if DEBUG
+                if (compType == null)
+                    throw new Exception("can't find component type " + meta.ComponentName);
+#endif
+                componentObj = Activator.CreateInstance(compType);
+
+                foreach (var field in meta.Fields)
+                {
+                    var fieldInfo = compType.GetField(field.Name);
+                    var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
+                    object defaultValue = defaultValueAttribute?.Value;
+                    var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
+                    if (value == null)
+                        continue;
+
+                    fieldInfo.SetValue(componentObj, value);
+                }
+            }
+            AddParams[0] = entityId;
+            AddParams[1] = componentObj;
+
+            MethodInfo genAddMethodInfo = addMethodInfo.MakeGenericMethod(compType);
+            genAddMethodInfo.Invoke(world, AddParams);
+        }
+
+        return entityId;
+    }
 }
