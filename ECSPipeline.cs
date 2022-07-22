@@ -90,8 +90,6 @@ public class ECSPipeline : MonoBehaviour
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
 
-        SetMutuallyExclusiveComponents();
-
         foreach (var view in FindObjectsOfType<EntityView>())
             view.InitAsEntity(_world);
 
@@ -183,23 +181,6 @@ public class ECSPipeline : MonoBehaviour
         }
 
         return systems;
-    }
-
-    private void SetMutuallyExclusiveComponents()
-    {
-        var methodName = "SetMutualExclusivity";
-        foreach (var componentType in IntegrationHelper.EcsComponentTypes)
-        {
-            var mutExclusiveAttribute = componentType.GetCustomAttribute<MutualyExclusiveAttribute>();
-            if (mutExclusiveAttribute == null)
-                continue;
-
-            foreach (var exclusiveType in mutExclusiveAttribute.Exclusives)
-            {
-                var methodInfo = typeof(EcsWorld).GetMethod(methodName).MakeGenericMethod(componentType, exclusiveType);
-                methodInfo.Invoke(_world, new object[0]);
-            }
-        }
     }
 
 #if UNITY_EDITOR

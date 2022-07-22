@@ -108,13 +108,23 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.LateFixedUpdate);
     }
 
+    private static bool ShouldSkipItem(string item, string[] skippedItems)
+    {
+        foreach (var skippedItem in skippedItems)
+        {
+            if (item == skippedItem)
+                return true;
+        }
+        return false;
+    }
+
     public void DrawAddList(string label, List<string> systems, string[] except, Action<string> onAdd)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
         foreach (var systemName in systems)
         {
-            if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || IntegrationHelper.ShouldSkipItem(systemName, except))
+            if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || ShouldSkipItem(systemName, except))
                 continue;
 
             EditorGUILayout.BeginHorizontal();

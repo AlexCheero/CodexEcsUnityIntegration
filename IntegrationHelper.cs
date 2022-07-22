@@ -3,26 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEditor;
 using UnityEngine;
 
 public class SystemAttribute : Attribute
 {
     public ESystemCategory[] Categories;
     public SystemAttribute(params ESystemCategory[] categories) => Categories = categories;
-}
-
-public class MutualyExclusiveAttribute : Attribute
-{
-    public Type[] Exclusives;
-    public MutualyExclusiveAttribute(params Type[] exclusives) => Exclusives = exclusives;
-}
-
-public enum EReactionType
-{
-    OnAdd,
-    OnRemove,
-    OnChange
 }
 
 public class HiddenInspector : Attribute { }
@@ -76,36 +62,11 @@ public static class IntegrationHelper
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
 
-    public static void DrawAddList(string label, string[] components, string[] except, Action<string> onAdd, string search)
-    {
-        EditorGUILayout.LabelField(label + ':');
-        GUILayout.Space(10);
-        foreach (var componentName in components)
-        {
-            if (!IsSearchMatch(search, componentName) || ShouldSkipItem(componentName, except))
-                continue;
-
-            EditorGUILayout.BeginHorizontal();
-
-            //TODO: add lines between components for readability
-            //      or remove "+" button and make buttons with component names on it
-            EditorGUILayout.LabelField(GetTypeUIName(componentName));
-            bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
-            if (tryAdd)
-                onAdd(componentName);
-
-            EditorGUILayout.EndHorizontal();
-        }
-    }
-
     public static string[] GetTypeNames<SameAssemblyType>(Func<Type, bool> predicate)
     {
         var types = Assembly.GetAssembly(typeof(SameAssemblyType)).GetTypes().Where(predicate).ToArray();
         return Array.ConvertAll(types, (t) => t.FullName);
     }
-
-    public static bool HaveAttribute<AttribType>(Type type) where AttribType : Attribute
-        => type.GetCustomAttributes(typeof(AttribType), true).Any();
 
     public static Type GetTypeByName(string systemName, EGatheredTypeCategory category)
     {
@@ -141,13 +102,7 @@ public static class IntegrationHelper
         return name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    public static bool ShouldSkipItem(string item, string[] skippedItems)
-    {
-        foreach (var skippedItem in skippedItems)
-        {
-            if (item == skippedItem)
-                return true;
-        }
-        return false;
-    }
+    #region View/Preset methods
+
+    #endregion
 }
