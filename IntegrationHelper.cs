@@ -44,6 +44,8 @@ public static class IntegrationHelper
     public static Type[] UnityComponentTypes;
     public static Type[] SystemTypes;
 
+    public static readonly Type[] AllowedFiledRefTypes = { typeof(EntityPreset), typeof(string) };
+
     static IntegrationHelper()
     {
         EcsComponentTypes = typeof(EntityView).Assembly.GetTypes()
@@ -102,7 +104,5 @@ public static class IntegrationHelper
         return name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    #region View/Preset methods
-
-    #endregion
+    public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
 }

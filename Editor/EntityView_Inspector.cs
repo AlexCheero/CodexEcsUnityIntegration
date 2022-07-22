@@ -85,20 +85,21 @@ public class EntityView_Inspector : Editor
         }
 
         _addedSearch = EditorGUILayout.TextField(_addedSearch);
-        for (int i = 0; i < View.MetasLength; i++)
+        var metas = View.Data.Metas;
+        for (int i = 0; i < metas.Length; i++)
         {
-            if (!IntegrationHelper.IsSearchMatch(_addedSearch, View.GetMeta(i).ComponentName))
+            if (!IntegrationHelper.IsSearchMatch(_addedSearch, metas[i].ComponentName))
                 continue;
 
             EditorGUILayout.BeginHorizontal();
 
-            DrawComponent(ref View.GetMeta(i));
+            DrawComponent(ref metas[i]);
 
             //TODO: delete button moves outside of the screen when foldout is expanded
             //component delete button
             if (GUILayout.Button(new GUIContent("-"), GUILayout.ExpandWidth(false)))
             {
-                View.RemoveMetaAt(i);
+                View.Data.RemoveMetaAt(i);
                 i--;
                 EditorUtility.SetDirty(target);
             }
@@ -138,7 +139,6 @@ public class EntityView_Inspector : Editor
             if (compSubTypes.Count == 0)
                 continue;
 
-
             EditorGUILayout.BeginHorizontal();
 
             foldouts[i] = EditorGUILayout.BeginFoldoutHeaderGroup(foldouts[i], IntegrationHelper.GetTypeUIName(compSubTypes[0]));
@@ -175,9 +175,10 @@ public class EntityView_Inspector : Editor
 
     private bool IsComponentAlreadyAdded(string component)
     {
-        for (int i = 0; i < View.MetasLength; i++)
+        var metas = View.Data.Metas;
+        for (int i = 0; i < metas.Length; i++)
         {
-            if (component == View.GetMeta(i).ComponentName)
+            if (component == metas[i].ComponentName)
                 return true;
         }
         return false;
@@ -187,16 +188,16 @@ public class EntityView_Inspector : Editor
     {
         _addListExpanded = false;
         var type = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.UnityComponent);
-        if (EntityView.IsUnityComponent(type))
+        if (IntegrationHelper.IsUnityComponent(type))
         {
             MethodInfo getComponentInfo = typeof(EntityView).GetMethod("GetComponent", new Type[] { }).MakeGenericMethod(type);
             var component = (Component)getComponentInfo.Invoke(View, null);
-            if (View.AddUnityComponent(component, type))
+            if (View.Data.AddUnityComponent(component, type))
                 EditorUtility.SetDirty(target);
         }
         else
         {
-            if (View.AddComponent(componentName))
+            if (View.Data.AddComponent(componentName))
                 EditorUtility.SetDirty(target);
         }
     }
