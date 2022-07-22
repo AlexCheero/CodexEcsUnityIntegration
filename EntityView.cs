@@ -76,6 +76,16 @@ public class EntityView : MonoBehaviour
 
     public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
 
+    private bool IsRefFieldTypeAllowed(Type fieldType)
+    {
+        foreach (var type in EntityView.AllowedFiledRefTypes)
+        {
+            if (fieldType == type)
+                return true;
+        }
+        return false;
+    }
+
     public ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
@@ -103,13 +113,17 @@ public class EntityView : MonoBehaviour
                 return new ComponentFieldMeta[0];
             }
 
+            bool isHidden = field.GetCustomAttribute<HiddenInspector>() != null ||
+                (!fieldType.IsValueType && !IsUnityComponent(fieldType) && !IsRefFieldTypeAllowed(fieldType));
+
             result[i] = new ComponentFieldMeta
             {
                 TypeName = fieldType.FullName,
                 Name = field.Name,
                 ValueRepresentation = string.Empty,
                 UnityComponent = null,
-                Preset = null
+                Preset = null,
+                IsHiddenInEditor = isHidden
             };
         }
         return result;
@@ -146,6 +160,8 @@ public class EntityView : MonoBehaviour
 
                 foreach (var field in meta.Fields)
                 {
+                    if (field.IsHiddenInEditor)
+                        continue;
                     var value = field.GetValue();
                     if (value == null)
                         continue;

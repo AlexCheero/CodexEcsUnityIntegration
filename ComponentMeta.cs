@@ -12,6 +12,8 @@ public struct ComponentFieldMeta
     public Component UnityComponent;
     public EntityPreset Preset;
 
+    public bool IsHiddenInEditor;
+
     public object GetValue()
     {
         bool isRepresentationNotEmpty = ValueRepresentation != null && ValueRepresentation.Length > 0;

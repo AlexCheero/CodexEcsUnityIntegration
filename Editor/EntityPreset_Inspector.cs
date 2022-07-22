@@ -120,7 +120,10 @@ public class EntityPreset_Inspector : Editor
             if (meta.IsExpanded && meta.Fields != null)
             {
                 for (int i = 0; i < meta.Fields.Length; i++)
-                    DrawField(ref meta.Fields[i]);
+                {
+                    if (!meta.Fields[i].IsHiddenInEditor)
+                        DrawField(ref meta.Fields[i]);
+                }
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }

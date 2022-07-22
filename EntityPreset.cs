@@ -46,6 +46,16 @@ public class EntityPreset : ScriptableObject
         return true;
     }
 
+    private bool IsRefFieldTypeAllowed(Type fieldType)
+    {
+        foreach (var type in EntityView.AllowedFiledRefTypes)
+        {
+            if (fieldType == type)
+                return true;
+        }
+        return false;
+    }
+
     public ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
@@ -58,20 +68,8 @@ public class EntityPreset : ScriptableObject
         {
             var field = fields[i];
             var fieldType = field.FieldType;
-            var isRefAllowed = false;
-            foreach (var type in EntityView.AllowedFiledRefTypes)
-            {
-                if (fieldType == type)
-                {
-                    isRefAllowed = true;
-                    break;
-                }
-            }
-            if (!fieldType.IsValueType && !isRefAllowed)
-            {
-                Debug.LogError("wrong component field type. fields should only be pods or derives UnityEngine.Component");
-                return new ComponentFieldMeta[0];
-            }
+            bool isHidden = fieldType.GetCustomAttribute<HiddenInspector>() != null ||
+                (!fieldType.IsValueType && !IsRefFieldTypeAllowed(fieldType));
 
             result[i] = new ComponentFieldMeta
             {
@@ -79,7 +77,8 @@ public class EntityPreset : ScriptableObject
                 Name = field.Name,
                 ValueRepresentation = string.Empty,
                 UnityComponent = null,
-                Preset = null
+                Preset = null,
+                IsHiddenInEditor = isHidden
             };
         }
         return result;

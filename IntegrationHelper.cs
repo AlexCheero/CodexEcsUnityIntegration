@@ -35,6 +35,8 @@ public class ReactiveSystemAttribute : Attribute
     }
 }
 
+public class HiddenInspector : Attribute { }
+
 public enum ESystemCategory
 {
     Init,
