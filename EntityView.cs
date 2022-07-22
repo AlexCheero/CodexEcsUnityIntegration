@@ -160,13 +160,13 @@ public class EntityView : MonoBehaviour
 
                 foreach (var field in meta.Fields)
                 {
-                    if (field.IsHiddenInEditor)
-                        continue;
-                    var value = field.GetValue();
+                    var fieldInfo = compType.GetField(field.Name);
+                    var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
+                    object defaultValue = defaultValueAttribute?.Value;
+                    var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
                     if (value == null)
                         continue;
 
-                    var fieldInfo = compType.GetField(field.Name);
                     fieldInfo.SetValue(componentObj, value);
                 }
             }

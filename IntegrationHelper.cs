@@ -36,6 +36,11 @@ public class ReactiveSystemAttribute : Attribute
 }
 
 public class HiddenInspector : Attribute { }
+public class DefaultValue : Attribute
+{
+    public object Value;
+    public DefaultValue(object value) => Value = value;
+}
 
 public enum ESystemCategory
 {
