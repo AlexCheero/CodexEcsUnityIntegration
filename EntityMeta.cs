@@ -9,6 +9,8 @@ public struct EntityMeta
     public ComponentMeta[] Metas;
 
 #if UNITY_EDITOR
+    private static readonly Type[] AllowedFiledRefTypes = { typeof(EntityPreset), typeof(string) };
+
     public void RemoveMetaAt(int idx)
     {
         var newLength = Metas.Length - 1;
@@ -17,7 +19,7 @@ public struct EntityMeta
         Array.Resize(ref Metas, newLength);
     }
 
-    public bool HaveComponentWithName(string componentName)
+    private bool HaveComponentWithName(string componentName)
     {
         foreach (var meta in Metas)
         {
@@ -61,7 +63,7 @@ public struct EntityMeta
 
     private bool IsRefFieldTypeAllowed(Type fieldType)
     {
-        foreach (var type in IntegrationHelper.AllowedFiledRefTypes)
+        foreach (var type in AllowedFiledRefTypes)
         {
             if (fieldType == type)
                 return true;
@@ -69,7 +71,7 @@ public struct EntityMeta
         return false;
     }
 
-    public ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
+    private ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
         if (IntegrationHelper.IsUnityComponent(compType) || compType == typeof(EntityPreset))

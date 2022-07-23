@@ -54,8 +54,6 @@ public struct EntityViewComponentsData
     }
 }
 
-public delegate void OnAddComponentDelegate(string componentName, ref EntityMeta data, UnityEngine.Object target);
-
 public static class IntegrationHelper
 {
     private const string Components = "Components";
@@ -69,8 +67,6 @@ public static class IntegrationHelper
 
     public static string[] ComponentTypeNames;
     public static string[] TagTypeNames;
-
-    public static readonly Type[] AllowedFiledRefTypes = { typeof(EntityPreset), typeof(string) };
 
     static IntegrationHelper()
     {
@@ -203,13 +199,13 @@ public static class IntegrationHelper
         {
             addSearch = EditorGUILayout.TextField(addSearch);
             EditorGUILayout.BeginVertical();
-            DrawAddList(Components, ComponentTypeNames, OnAddComponent, addSearch, ref data, target);
+            DrawAddList(Components, ComponentTypeNames, addSearch, ref data, target);
             GUILayout.Space(10);
-            DrawAddList(Tags, TagTypeNames, OnAddComponent, addSearch, ref data, target);
+            DrawAddList(Tags, TagTypeNames, addSearch, ref data, target);
             GUILayout.Space(10);
             if (componentsData.ViewComponentTypeNames != null && componentsData.ViewComponentTypeNames.Count > 0)
             {
-                DrawAddUnityComponentList(UnityComponents, componentsData, OnAddComponent, addSearch, ref data, target);
+                DrawAddUnityComponentList(UnityComponents, componentsData, addSearch, ref data, target);
                 GUILayout.Space(10);
             }
             EditorGUILayout.EndVertical();
@@ -233,8 +229,8 @@ public static class IntegrationHelper
         }
     }
 
-    private static void DrawAddUnityComponentList(string label, EntityViewComponentsData componentsData,
-        OnAddComponentDelegate onAdd, string search, ref EntityMeta data, UnityEngine.Object target)
+    private static void DrawAddUnityComponentList(string label, EntityViewComponentsData componentsData, string search,
+        ref EntityMeta data, UnityEngine.Object target)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
@@ -251,7 +247,7 @@ public static class IntegrationHelper
             bool canAddFirstComponent = IsSearchMatch(search, compSubTypes[0]) &&
                 !IsComponentAlreadyAdded(compSubTypes[0], data);
             if (canAddFirstComponent && GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                onAdd(compSubTypes[0], ref data, target);
+                OnAddComponent(compSubTypes[0], ref data, target);
 
             EditorGUILayout.EndHorizontal();
 
@@ -272,7 +268,7 @@ public static class IntegrationHelper
                     //      or remove "+" button and make buttons with component names on it
                     EditorGUILayout.LabelField("add as " + GetTypeUIName(componentName));
                     if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                        onAdd(componentName, ref data, target);
+                        OnAddComponent(componentName, ref data, target);
 
                     EditorGUILayout.EndHorizontal();
                 }
@@ -282,8 +278,7 @@ public static class IntegrationHelper
         }
     }
 
-    private static void DrawAddList(string label, string[] components, OnAddComponentDelegate onAdd, string search,
-        ref EntityMeta data, UnityEngine.Object target)
+    private static void DrawAddList(string label, string[] components, string search, ref EntityMeta data, UnityEngine.Object target)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
@@ -298,7 +293,7 @@ public static class IntegrationHelper
             //      or remove "+" button and make buttons with component names on it
             EditorGUILayout.LabelField(GetTypeUIName(componentName));
             if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                onAdd(componentName, ref data, target);
+                OnAddComponent(componentName, ref data, target);
 
             EditorGUILayout.EndHorizontal();
         }
@@ -382,7 +377,7 @@ public static class IntegrationHelper
                 var vec3Value = valueObject != null ? (Vector3)valueObject : default(Vector3);
                 setDirty = fieldMeta.SetValue(EditorGUILayout.Vector3Field("", vec3Value));
             }
-            else if (nameof(EntityPreset) == fieldMeta.TypeName)
+            else if (fieldMeta.TypeName == typeof(EntityPreset).FullName)
             {
                 var obj = valueObject != null ? (EntityPreset)valueObject : null;
                 setDirty = fieldMeta.SetValue(EditorGUILayout.ObjectField("", obj, typeof(EntityPreset), true));
