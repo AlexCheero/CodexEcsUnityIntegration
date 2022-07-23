@@ -4,9 +4,7 @@ using UnityEditor;
 [CustomEditor(typeof(EntityPreset))]
 public class EntityPreset_Inspector : Editor
 {
-    private bool _addListExpanded;
-    private string _addSearch;
-    private string _addedSearch;
+    private EntityInspectorCommonData _commonData;
 
     private EntityPreset _preset;
     private EntityPreset Preset
@@ -19,11 +17,6 @@ public class EntityPreset_Inspector : Editor
         }
     }
 
-    public override void OnInspectorGUI()
-    {
-        serializedObject.Update();
-        IntegrationHelper.DrawAddComponents(ref _addListExpanded, _addSearch, Preset.Data, target);
-        _addedSearch = EditorGUILayout.TextField(_addedSearch);
-        IntegrationHelper.DrawComponents(Preset.Data, _addedSearch, target);
-    }
+    public override void OnInspectorGUI() =>
+        IntegrationHelper.OnEntityInspectorGUI(serializedObject, target, ref _commonData, ref Preset.Data);
 }

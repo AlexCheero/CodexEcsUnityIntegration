@@ -1,7 +1,6 @@
 using ECS;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -16,7 +15,6 @@ public class Pipeline_Inspector : Editor
     private const string LateUpdateSystemsLabel = "Late Update Systems";
     private const string FixedSystemsLabel = "Fixed Update Systems";
     private const string LateFixedSystemsLabel = "Late Fixed Update Systems";
-    private const string ReactiveSystemsLabel = "Reactive Systems";
 
     private static List<string> initSystemTypeNames;
     private static List<string> updateSystemTypeNames;

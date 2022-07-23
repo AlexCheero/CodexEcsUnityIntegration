@@ -35,6 +35,27 @@ public enum EGatheredTypeCategory
     System
 }
 
+public struct EntityInspectorCommonData
+{
+    public bool AddListExpanded;
+    public string AddSearch;
+    public string AddedSearch;
+}
+
+public struct EntityViewComponentsData
+{
+    public List<List<string>> ViewComponentTypeNames;
+    public List<bool> ViewComponentFoldouts;
+
+    public EntityViewComponentsData(int length)
+    {
+        ViewComponentTypeNames = new List<List<string>>(length);
+        ViewComponentFoldouts = new List<bool>(length);
+    }
+}
+
+public delegate void OnAddComponentDelegate(string componentName, ref EntityMeta data, UnityEngine.Object target);
+
 public static class IntegrationHelper
 {
     private const string Components = "Components";
@@ -147,6 +168,7 @@ public static class IntegrationHelper
     }
 
 #if UNITY_EDITOR
+    #region EntityInspectorHelper
     private static string[] GetTypeNames<SameAssemblyType>(Func<Type, bool> predicate)
     {
         var types = Assembly.GetAssembly(typeof(SameAssemblyType)).GetTypes().Where(predicate).ToArray();
@@ -162,8 +184,17 @@ public static class IntegrationHelper
 
     public static string GetTypeUIName(string fullName) => fullName.Substring(fullName.LastIndexOf('.') + 1);
 
-    public static void DrawAddComponents(ref bool addListExpanded, string addSearch, in EntityMeta data,
-        UnityEngine.Object target, List<List<string>> viewComponentTypeNames = null, List<bool> viewComponentFoldouts = null)
+    public static void OnEntityInspectorGUI(SerializedObject serializedObject, UnityEngine.Object target,
+        ref EntityInspectorCommonData commonInspectorData, ref EntityMeta data, EntityViewComponentsData componentsData = default)
+    {
+        serializedObject.Update();
+        DrawAddComponents(ref commonInspectorData.AddListExpanded, ref commonInspectorData.AddSearch, ref data, target, componentsData);
+        commonInspectorData.AddedSearch = EditorGUILayout.TextField(commonInspectorData.AddedSearch);
+        DrawComponents(ref data, ref commonInspectorData.AddedSearch, target);
+    }
+
+    private static void DrawAddComponents(ref bool addListExpanded, ref string addSearch, ref EntityMeta data,
+        UnityEngine.Object target, EntityViewComponentsData componentsData = default)
     {
         var listText = addListExpanded ? "Shrink components list" : "Expand components list";
         if (GUILayout.Button(new GUIContent(listText), GUILayout.ExpandWidth(false)))
@@ -172,20 +203,20 @@ public static class IntegrationHelper
         {
             addSearch = EditorGUILayout.TextField(addSearch);
             EditorGUILayout.BeginVertical();
-            DrawAddList(Components, ComponentTypeNames, OnAddComponent, addSearch, data, target);
+            DrawAddList(Components, ComponentTypeNames, OnAddComponent, addSearch, ref data, target);
             GUILayout.Space(10);
-            DrawAddList(Tags, TagTypeNames, OnAddComponent, addSearch, data, target);
+            DrawAddList(Tags, TagTypeNames, OnAddComponent, addSearch, ref data, target);
             GUILayout.Space(10);
-            if (viewComponentTypeNames != null && viewComponentTypeNames.Count > 0)
+            if (componentsData.ViewComponentTypeNames != null && componentsData.ViewComponentTypeNames.Count > 0)
             {
-                DrawAddUnityComponentList(UnityComponents, viewComponentTypeNames, viewComponentFoldouts, OnAddComponent, addSearch, data, target);
+                DrawAddUnityComponentList(UnityComponents, componentsData, OnAddComponent, addSearch, ref data, target);
                 GUILayout.Space(10);
             }
             EditorGUILayout.EndVertical();
         }
     }
 
-    private static void OnAddComponent(string componentName, EntityMeta data, UnityEngine.Object target)
+    private static void OnAddComponent(string componentName, ref EntityMeta data, UnityEngine.Object target)
     {
         var type = GetTypeByName(componentName, EGatheredTypeCategory.UnityComponent);
         if (IsUnityComponent(type))
@@ -202,28 +233,29 @@ public static class IntegrationHelper
         }
     }
 
-    private static void DrawAddUnityComponentList(string label, List<List<string>> components, List<bool> foldouts,
-        Action<string, EntityMeta, UnityEngine.Object> onAdd, string search, in EntityMeta data, UnityEngine.Object target)
+    private static void DrawAddUnityComponentList(string label, EntityViewComponentsData componentsData,
+        OnAddComponentDelegate onAdd, string search, ref EntityMeta data, UnityEngine.Object target)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
-        for (int i = 0; i < components.Count; i++)
+        for (int i = 0; i < componentsData.ViewComponentTypeNames.Count; i++)
         {
-            var compSubTypes = components[i];
+            var compSubTypes = componentsData.ViewComponentTypeNames[i];
             if (compSubTypes.Count == 0)
                 continue;
 
             EditorGUILayout.BeginHorizontal();
 
-            foldouts[i] = EditorGUILayout.BeginFoldoutHeaderGroup(foldouts[i], GetTypeUIName(compSubTypes[0]));
+            componentsData.ViewComponentFoldouts[i] =
+                EditorGUILayout.BeginFoldoutHeaderGroup(componentsData.ViewComponentFoldouts[i], GetTypeUIName(compSubTypes[0]));
             bool canAddFirstComponent = IsSearchMatch(search, compSubTypes[0]) &&
                 !IsComponentAlreadyAdded(compSubTypes[0], data);
             if (canAddFirstComponent && GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                onAdd(compSubTypes[0], data, target);
+                onAdd(compSubTypes[0], ref data, target);
 
             EditorGUILayout.EndHorizontal();
 
-            if (foldouts[i])
+            if (componentsData.ViewComponentFoldouts[i])
             {
                 for (int j = 1; j < compSubTypes.Count; j++)
                 {
@@ -240,7 +272,7 @@ public static class IntegrationHelper
                     //      or remove "+" button and make buttons with component names on it
                     EditorGUILayout.LabelField("add as " + GetTypeUIName(componentName));
                     if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                        onAdd(componentName, data, target);
+                        onAdd(componentName, ref data, target);
 
                     EditorGUILayout.EndHorizontal();
                 }
@@ -250,8 +282,8 @@ public static class IntegrationHelper
         }
     }
 
-    private static void DrawAddList(string label, string[] components, Action<string, EntityMeta, UnityEngine.Object> onAdd, string search,
-        in EntityMeta data, UnityEngine.Object target)
+    private static void DrawAddList(string label, string[] components, OnAddComponentDelegate onAdd, string search,
+        ref EntityMeta data, UnityEngine.Object target)
     {
         EditorGUILayout.LabelField(label + ':');
         GUILayout.Space(10);
@@ -266,7 +298,7 @@ public static class IntegrationHelper
             //      or remove "+" button and make buttons with component names on it
             EditorGUILayout.LabelField(GetTypeUIName(componentName));
             if (GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false)))
-                onAdd(componentName, data, target);
+                onAdd(componentName, ref data, target);
 
             EditorGUILayout.EndHorizontal();
         }
@@ -283,7 +315,7 @@ public static class IntegrationHelper
         return false;
     }
 
-    public static void DrawComponents(in EntityMeta data, string search, UnityEngine.Object target)
+    private static void DrawComponents(ref EntityMeta data, ref string search, UnityEngine.Object target)
     {
         var metas = data.Metas;
         for (int i = 0; i < metas.Length; i++)
@@ -372,5 +404,6 @@ public static class IntegrationHelper
         }
         EditorGUILayout.EndHorizontal();
     }
+    #endregion
 #endif
 }
