@@ -132,14 +132,16 @@ public static class IntegrationHelper
 
         foreach (var meta in data.Metas)
         {
-            var compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.UnityComponent);
+            Type compType;
             object componentObj;
             if (meta.UnityComponent != null)
             {
+                compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.UnityComponent);
                 componentObj = meta.UnityComponent;
             }
             else
             {
+                compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.EcsComponent);
 #if DEBUG
                 if (compType == null)
                     throw new Exception(obj.name + ". can't find component type " + meta.ComponentName);
