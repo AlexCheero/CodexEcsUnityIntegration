@@ -7,5 +7,9 @@ public class EntityPreset : ScriptableObject
     [SerializeField]
     public EntityMeta Data = new EntityMeta { Metas = new ComponentMeta[0] };
 
+#if UNITY_EDITOR
+    public int InitAsEntity(EcsWorld world) => IntegrationHelper.InitAsEntity(world, Data, this);
+#else
     public int InitAsEntity(EcsWorld world) => IntegrationHelper.InitAsEntity(world, Data);
+#endif
 }

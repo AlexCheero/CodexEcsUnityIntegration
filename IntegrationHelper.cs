@@ -5,6 +5,9 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using Object = UnityEngine.Object;
+#endif
 
 public class SystemAttribute : Attribute
 {
@@ -117,7 +120,11 @@ public static class IntegrationHelper
     public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
 
     private static readonly object[] AddParams = { null, null };
+#if UNITY_EDITOR
+    public static int InitAsEntity(EcsWorld world, in EntityMeta data, Object obj)
+#else
     public static int InitAsEntity(EcsWorld world, in EntityMeta data)
+#endif
     {
         var entityId = world.Create();
 
@@ -135,7 +142,7 @@ public static class IntegrationHelper
             {
 #if DEBUG
                 if (compType == null)
-                    throw new Exception("can't find component type " + meta.ComponentName);
+                    throw new Exception(obj.name + ". can't find component type " + meta.ComponentName);
 #endif
                 componentObj = Activator.CreateInstance(compType);
 

@@ -20,7 +20,11 @@ public class EntityView : MonoBehaviour
     public int InitAsEntity(EcsWorld world)
     {
         _world = world;
+#if UNITY_EDITOR
+        var entityId = IntegrationHelper.InitAsEntity(world, Data, this);
+#else
         var entityId = IntegrationHelper.InitAsEntity(world, Data);
+#endif
         Entity = _world.GetById(entityId);
         return entityId;
     }
