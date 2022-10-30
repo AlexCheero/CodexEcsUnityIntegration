@@ -36,6 +36,8 @@ public class EntityView : MonoBehaviour
     public ref T GetEcsComponentByRef<T>() => ref _world.GetComponentByRef<T>(Id);
     public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
 
+    public void DeleteFromWorld() => _world.Delete(Id);
+    
     public void DeleteSelf()
     {
         _world.Delete(Id);
