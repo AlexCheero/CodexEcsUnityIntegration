@@ -11,7 +11,6 @@ public struct ComponentFieldMeta
     public string Name;
     public string ValueRepresentation;
     public Object UnityObject;
-    public EntityPreset Preset;
 
     public bool IsHiddenInEditor;
 
@@ -29,8 +28,6 @@ public struct ComponentFieldMeta
             return ValueRepresentation;
         else if (TypeName == typeof(string).FullName)
             return ValueRepresentation;
-        else if (nameof(EntityPreset) == TypeName)
-            return Preset;
         else if (typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
             return UnityObject;
         else
@@ -45,39 +42,24 @@ public struct ComponentFieldMeta
     {
         var previousRepresentation = ValueRepresentation;
         var previousComponent = UnityObject;
-        var previousPreset = Preset;
 
         if (TypeName == typeof(int).FullName)
-        {
             ValueRepresentation = value.ToString();
-        }
         else if (TypeName == typeof(float).FullName)
-        {
             ValueRepresentation = ((float)value).ToString(CultureInfo.InvariantCulture);
-        }
         else if (TypeName == typeof(Vector3).FullName)
         {
             var vec = (Vector3)value;
             ValueRepresentation = vec.x + " " + vec.y + " " + vec.z;
         }
         else if (TypeName == typeof(string).FullName)
-        {
             ValueRepresentation = (string)value;
-        }
-        else if (nameof(EntityPreset) == TypeName)
-        {
-            Preset = (EntityPreset)value;
-        }
         else if(typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
-        {
             UnityObject = (Object)value;
-        }
         else
-        {
             Debug.LogError("Wrong field meta Type " + TypeName);
-        }
 
-        return previousRepresentation != ValueRepresentation || previousComponent != UnityObject || previousPreset != Preset;
+        return previousRepresentation != ValueRepresentation || previousComponent != UnityObject;
     }
 #endif
 

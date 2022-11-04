@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 [InitializeOnLoad]
 [Serializable]
@@ -89,5 +90,4 @@ public abstract class FieldMetaObject<T> : BaseFieldMeta, ISerializationCallback
 [Serializable] public class FloatFieldMeta : FieldMetaObject<float> { public FloatFieldMeta(string name) : base(name) { } }
 [Serializable] public class Vec3FieldMeta : FieldMetaObject<Vector3> { public Vec3FieldMeta(string name) : base(name) { } }
 [Serializable] public class StrFieldMeta : FieldMetaObject<string> { public StrFieldMeta(string name) : base(name) { } }
-[Serializable] public class PresetFieldMeta : FieldMetaObject<EntityPreset> { public PresetFieldMeta(string name) : base(name) { } }
-[Serializable] public class UnityComponentFieldMeta : FieldMetaObject<Component> { public UnityComponentFieldMeta(string name) : base(name) { } }
+[Serializable] public class UnityObjectFieldMeta : FieldMetaObject<Object> { public UnityObjectFieldMeta(string name) : base(name) { } }

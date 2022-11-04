@@ -9,7 +9,7 @@ public struct EntityMeta
     public ComponentMeta[] Metas;
 
 #if UNITY_EDITOR
-    private static readonly Type[] AllowedFiledRefTypes = { typeof(EntityPreset), typeof(string) };
+    private static readonly Type[] AllowedFiledRefTypes = { typeof(string) };
 
     public void RemoveMetaAt(int idx)
     {
@@ -74,7 +74,7 @@ public struct EntityMeta
     private ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
-        if (IntegrationHelper.IsUnityObject(compType) || compType == typeof(EntityPreset))
+        if (IntegrationHelper.IsUnityObject(compType))
             return null;
 
         var fields = compType.GetFields();
@@ -93,7 +93,6 @@ public struct EntityMeta
                 Name = field.Name,
                 ValueRepresentation = string.Empty,
                 UnityObject = null,
-                Preset = null,
                 IsHiddenInEditor = isHidden
             };
         }
