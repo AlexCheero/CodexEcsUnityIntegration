@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 [Serializable]
@@ -11,7 +10,7 @@ public struct ComponentFieldMeta
     public string TypeName;
     public string Name;
     public string ValueRepresentation;
-    [FormerlySerializedAs("UnityComponent")] public Object UnityObject;
+    public Object UnityObject;
     public EntityPreset Preset;
 
     public bool IsHiddenInEditor;
@@ -102,7 +101,7 @@ public struct ComponentMeta
 {
     public string ComponentName;
     public ComponentFieldMeta[] Fields;
-    [FormerlySerializedAs("UnityComponent")] public Object UnityObject;
+    public Object UnityObject;
 #if UNITY_EDITOR
     public bool IsExpanded;
 #endif
