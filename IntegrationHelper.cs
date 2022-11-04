@@ -353,17 +353,24 @@ public static class IntegrationHelper
     {
         EditorGUILayout.BeginVertical();
         {
-            //TODO: draw tags without arrow
-            meta.IsExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(meta.IsExpanded, GetTypeUIName(meta.ComponentName));
-            if (meta.IsExpanded && meta.Fields != null)
+            var componentUIName = GetTypeUIName(meta.ComponentName);
+            if (meta.Fields == null || meta.Fields.Length == 0)
             {
-                for (int i = 0; i < meta.Fields.Length; i++)
-                {
-                    if (!meta.Fields[i].IsHiddenInEditor)
-                        DrawField(ref meta.Fields[i], target);
-                }
+                EditorGUILayout.LabelField(componentUIName);
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
+            else
+            {
+                meta.IsExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(meta.IsExpanded, componentUIName);
+                if (meta.IsExpanded)
+                {
+                    for (int i = 0; i < meta.Fields.Length; i++)
+                    {
+                        if (!meta.Fields[i].IsHiddenInEditor)
+                            DrawField(ref meta.Fields[i], target);
+                    }
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
+            }
         }
         EditorGUILayout.EndVertical();
     }
