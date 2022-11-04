@@ -150,21 +150,14 @@ public static class IntegrationHelper
 
                 foreach (var field in meta.Fields)
                 {
-                    try
-                    {
-                        var fieldInfo = compType.GetField(field.Name);
-                        var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
-                        object defaultValue = defaultValueAttribute?.Value;
-                        var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
-                        if (value == null)
-                            continue;
+                    var fieldInfo = compType.GetField(field.Name);
+                    var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
+                    object defaultValue = defaultValueAttribute?.Value;
+                    var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
+                    if (value == null)
+                        continue;
 
-                        fieldInfo.SetValue(componentObj, value);
-                    }
-                    catch
-                    {
-                        throw;
-                    }
+                    fieldInfo.SetValue(componentObj, value);
                 }
             }
             AddParams[0] = entityId;
