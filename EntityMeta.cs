@@ -56,7 +56,7 @@ public struct EntityMeta
         Metas[Metas.Length - 1] = new ComponentMeta
         {
             ComponentName = fullName,
-            UnityComponent = component
+            UnityObject = component
         };
         return true;
     }
@@ -74,7 +74,7 @@ public struct EntityMeta
     private ComponentFieldMeta[] GetEcsComponentTypeFields(string componentName)
     {
         var compType = IntegrationHelper.GetTypeByName(componentName, EGatheredTypeCategory.EcsComponent);
-        if (IntegrationHelper.IsUnityComponent(compType) || compType == typeof(EntityPreset))
+        if (IntegrationHelper.IsUnityObject(compType) || compType == typeof(EntityPreset))
             return null;
 
         var fields = compType.GetFields();
@@ -85,14 +85,14 @@ public struct EntityMeta
             var fieldType = field.FieldType;
 
             bool isHidden = field.GetCustomAttribute<HiddenInspector>() != null ||
-                (!fieldType.IsValueType && !IntegrationHelper.IsUnityComponent(fieldType) && !IsRefFieldTypeAllowed(fieldType));
+                (!fieldType.IsValueType && !IntegrationHelper.IsUnityObject(fieldType) && !IsRefFieldTypeAllowed(fieldType));
 
             result[i] = new ComponentFieldMeta
             {
                 TypeName = fieldType.FullName,
                 Name = field.Name,
                 ValueRepresentation = string.Empty,
-                UnityComponent = null,
+                UnityObject = null,
                 Preset = null,
                 IsHiddenInEditor = isHidden
             };

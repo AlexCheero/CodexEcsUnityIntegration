@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.Serialization;
+using Object = UnityEngine.Object;
 
 [Serializable]
 public struct ComponentFieldMeta
@@ -9,7 +11,7 @@ public struct ComponentFieldMeta
     public string TypeName;
     public string Name;
     public string ValueRepresentation;
-    public Component UnityComponent;
+    [FormerlySerializedAs("UnityComponent")] public Object UnityObject;
     public EntityPreset Preset;
 
     public bool IsHiddenInEditor;
@@ -28,10 +30,10 @@ public struct ComponentFieldMeta
             return ValueRepresentation;
         else if (TypeName == typeof(string).FullName)
             return ValueRepresentation;
-        else if (typeof(Component).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent)))
-            return UnityComponent;
         else if (nameof(EntityPreset) == TypeName)
             return Preset;
+        else if (typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
+            return UnityObject;
         else
         {
             Debug.LogError("Wrong field meta Type: " + TypeName);
@@ -43,7 +45,7 @@ public struct ComponentFieldMeta
     public bool SetValue(object value)
     {
         var previousRepresentation = ValueRepresentation;
-        var previousComponent = UnityComponent;
+        var previousComponent = UnityObject;
         var previousPreset = Preset;
 
         if (TypeName == typeof(int).FullName)
@@ -63,20 +65,20 @@ public struct ComponentFieldMeta
         {
             ValueRepresentation = (string)value;
         }
-        else if(typeof(Component).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityComponent)))
-        {
-            UnityComponent = (Component)value;
-        }
         else if (nameof(EntityPreset) == TypeName)
         {
             Preset = (EntityPreset)value;
+        }
+        else if(typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
+        {
+            UnityObject = (Object)value;
         }
         else
         {
             Debug.LogError("Wrong field meta Type " + TypeName);
         }
 
-        return previousRepresentation != ValueRepresentation || previousComponent != UnityComponent || previousPreset != Preset;
+        return previousRepresentation != ValueRepresentation || previousComponent != UnityObject || previousPreset != Preset;
     }
 #endif
 
@@ -100,7 +102,7 @@ public struct ComponentMeta
 {
     public string ComponentName;
     public ComponentFieldMeta[] Fields;
-    public Component UnityComponent;
+    [FormerlySerializedAs("UnityComponent")] public Object UnityObject;
 #if UNITY_EDITOR
     public bool IsExpanded;
 #endif

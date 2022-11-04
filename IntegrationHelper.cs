@@ -34,7 +34,7 @@ public enum ESystemCategory
 public enum EGatheredTypeCategory
 {
     EcsComponent,
-    UnityComponent,
+    UnityObject,
     System
 }
 
@@ -65,7 +65,7 @@ public static class IntegrationHelper
 
     //TODO: unify with typenames from inspectors
     private static Type[] EcsComponentTypes;
-    private static Type[] UnityComponentTypes;
+    private static Type[] UnityObjectTypes;
     private static Type[] SystemTypes;
 
     public static string[] ComponentTypeNames;
@@ -79,8 +79,8 @@ public static class IntegrationHelper
         //TODO: could cause troubles with nested assemlies
         var types = new List<Type>();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            types.AddRange(assembly.GetTypes().Where((t) => typeof(Component).IsAssignableFrom(t)));
-        UnityComponentTypes = types.ToArray();
+            types.AddRange(assembly.GetTypes().Where((t) => typeof(Object).IsAssignableFrom(t)));
+        UnityObjectTypes = types.ToArray();
 
         SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
             //TODO: duplicated from Pipeline_Inspector move to helper class
@@ -98,8 +98,8 @@ public static class IntegrationHelper
             case EGatheredTypeCategory.EcsComponent:
                 types = EcsComponentTypes;
                 break;
-            case EGatheredTypeCategory.UnityComponent:
-                types = UnityComponentTypes;
+            case EGatheredTypeCategory.UnityObject:
+                types = UnityObjectTypes;
                 break;
             case EGatheredTypeCategory.System:
                 types = SystemTypes;
@@ -117,7 +117,7 @@ public static class IntegrationHelper
         return null;
     }
 
-    public static bool IsUnityComponent(Type type) => typeof(Component).IsAssignableFrom(type);
+    public static bool IsUnityObject(Type type) => typeof(Object).IsAssignableFrom(type);
 
     private static readonly object[] AddParams = { null, null };
 #if UNITY_EDITOR
@@ -134,10 +134,10 @@ public static class IntegrationHelper
         {
             Type compType;
             object componentObj;
-            if (meta.UnityComponent != null)
+            if (meta.UnityObject != null)
             {
-                compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.UnityComponent);
-                componentObj = meta.UnityComponent;
+                compType = GetTypeByName(meta.ComponentName, EGatheredTypeCategory.UnityObject);
+                componentObj = meta.UnityObject;
             }
             else
             {
@@ -150,14 +150,21 @@ public static class IntegrationHelper
 
                 foreach (var field in meta.Fields)
                 {
-                    var fieldInfo = compType.GetField(field.Name);
-                    var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
-                    object defaultValue = defaultValueAttribute?.Value;
-                    var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
-                    if (value == null)
-                        continue;
+                    try
+                    {
+                        var fieldInfo = compType.GetField(field.Name);
+                        var defaultValueAttribute = fieldInfo.GetCustomAttribute<DefaultValue>();
+                        object defaultValue = defaultValueAttribute?.Value;
+                        var value = field.IsHiddenInEditor ? defaultValue : field.GetValue();
+                        if (value == null)
+                            continue;
 
-                    fieldInfo.SetValue(componentObj, value);
+                        fieldInfo.SetValue(componentObj, value);
+                    }
+                    catch
+                    {
+                        throw;
+                    }
                 }
             }
             AddParams[0] = entityId;
@@ -221,8 +228,8 @@ public static class IntegrationHelper
 
     private static void OnAddComponent(string componentName, ref EntityMeta data, UnityEngine.Object target)
     {
-        var type = GetTypeByName(componentName, EGatheredTypeCategory.UnityComponent);
-        if (IsUnityComponent(type))
+        var type = GetTypeByName(componentName, EGatheredTypeCategory.UnityObject);
+        if (IsUnityObject(type))
         {
             MethodInfo getComponentInfo = typeof(EntityView).GetMethod("GetComponent", new Type[] { }).MakeGenericMethod(type);
             var component = (Component)getComponentInfo.Invoke(target, null);
@@ -396,8 +403,8 @@ public static class IntegrationHelper
             }
             else
             {
-                var type = GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.UnityComponent);
-                var obj = valueObject != null ? (Component)valueObject : null;
+                var type = GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.UnityObject);
+                var obj = valueObject != null ? (Object)valueObject : null;
                 setDirty = fieldMeta.SetValue(EditorGUILayout.ObjectField("", obj, type, true));
             }
 
