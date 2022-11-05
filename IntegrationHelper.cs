@@ -35,7 +35,8 @@ public enum EGatheredTypeCategory
 {
     EcsComponent,
     UnityObject,
-    System
+    System,
+    Enum
 }
 
 public struct EntityInspectorCommonData
@@ -64,9 +65,11 @@ public static class IntegrationHelper
     private const string UnityComponents = "UnityComponents";
 
     //TODO: unify with typenames from inspectors
+    //TODO: why not use list?
     private static Type[] EcsComponentTypes;
     private static Type[] UnityObjectTypes;
     private static Type[] SystemTypes;
+    private static Type[] EnumTypes;
 
     public static string[] ComponentTypeNames;
     public static string[] TagTypeNames;
@@ -81,6 +84,11 @@ public static class IntegrationHelper
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             types.AddRange(assembly.GetTypes().Where((t) => typeof(Object).IsAssignableFrom(t)));
         UnityObjectTypes = types.ToArray();
+        
+        var enumTypes = new List<Type>();
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            enumTypes.AddRange(assembly.GetTypes().Where((t) => t.IsEnum));
+        EnumTypes = enumTypes.ToArray();
 
         SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
             //TODO: duplicated from Pipeline_Inspector move to helper class
@@ -103,6 +111,9 @@ public static class IntegrationHelper
                 break;
             case EGatheredTypeCategory.System:
                 types = SystemTypes;
+                break;
+            case EGatheredTypeCategory.Enum:
+                types = EnumTypes;
                 break;
             default:
                 return null;
@@ -375,7 +386,7 @@ public static class IntegrationHelper
             EditorGUILayout.LabelField(fieldMeta.Name);
             var valueObject = fieldMeta.GetValue();
 
-            bool setDirty;
+            bool setDirty = false;
             if (fieldMeta.TypeName == typeof(int).FullName)
             {
                 var intValue = valueObject != null ? (int)valueObject : default(int);
@@ -396,11 +407,21 @@ public static class IntegrationHelper
                 var str = valueObject as string;
                 setDirty = fieldMeta.SetValue(EditorGUILayout.TextField(str));
             }
-            else
+            else if (typeof(Object).IsAssignableFrom(GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.UnityObject)))
             {
                 var type = GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.UnityObject);
                 var obj = valueObject != null ? (Object)valueObject : null;
                 setDirty = fieldMeta.SetValue(EditorGUILayout.ObjectField("", obj, type, true));
+            }
+            else if (GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.Enum) != null)
+            {
+                var enumType = GetTypeByName(fieldMeta.TypeName, EGatheredTypeCategory.Enum);
+                Enum value;
+                if (string.IsNullOrEmpty(fieldMeta.ValueRepresentation))
+                    value = (Enum)Enum.GetValues(enumType).GetValue(0);
+                else
+                    value = (Enum)Enum.Parse(enumType, fieldMeta.ValueRepresentation);
+                setDirty = fieldMeta.SetValue(EditorGUILayout.EnumPopup(value));
             }
 
             if (setDirty)

@@ -30,6 +30,12 @@ public struct ComponentFieldMeta
             return ValueRepresentation;
         else if (typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
             return UnityObject;
+        else if (IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.Enum) != null)
+        {
+            if (string.IsNullOrEmpty(ValueRepresentation))
+                return null;
+            return Enum.Parse(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.Enum), ValueRepresentation);
+        }
         else
         {
             Debug.LogError("Wrong field meta Type: " + TypeName);
@@ -56,6 +62,8 @@ public struct ComponentFieldMeta
             ValueRepresentation = (string)value;
         else if(typeof(Object).IsAssignableFrom(IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.UnityObject)))
             UnityObject = (Object)value;
+        else if (IntegrationHelper.GetTypeByName(TypeName, EGatheredTypeCategory.Enum) != null)
+            ValueRepresentation = value.ToString();
         else
             Debug.LogError("Wrong field meta Type " + TypeName);
 
