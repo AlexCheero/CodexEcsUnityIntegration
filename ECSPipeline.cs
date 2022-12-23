@@ -90,7 +90,7 @@ public class ECSPipeline : MonoBehaviour
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
 
-        foreach (var view in FindObjectsOfType<EntityView>())
+        foreach (var view in FindObjectsOfType<EntityView>(true))
             view.InitAsEntity(_world);
 
         //call init systems after initing all the start entities
