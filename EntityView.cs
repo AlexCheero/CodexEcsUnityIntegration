@@ -30,10 +30,8 @@ public class EntityView : MonoBehaviour
     }
 
     public bool Have<T>() => _world.Have<T>(Id);
-    public ref T AddAndReturnRef<T>(T component = default) => ref _world.AddAndReturnRef(Id, component);
     public void Add<T>(T component = default) => _world.Add<T>(Id, component);
-    public T GetEcsComponent<T>() => _world.GetComponent<T>(Id);
-    public ref T GetEcsComponentByRef<T>() => ref _world.GetComponentByRef<T>(Id);
+    public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(Id);
     public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
 
     public void DeleteFromWorld() => _world.Delete(Id);
@@ -73,7 +71,7 @@ public class EntityView : MonoBehaviour
         if (view.Have<CollisionWith>())
         {
             if (view.Have<OverrideCollision>())
-                view.GetEcsComponentByRef<CollisionWith>().entity = otherEntity;
+                view.GetEcsComponent<CollisionWith>().entity = otherEntity;
         }
         else
         {
