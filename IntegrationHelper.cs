@@ -168,7 +168,21 @@ public static class IntegrationHelper
                     if (value == null)
                         continue;
 
+#if DEBUG
+                    try
+                    {
+                        fieldInfo.SetValue(componentObj, value);
+                    }
+                    catch (Exception e)
+                    {
+                        var newEx = new Exception(e.Message + ". compType: " + compType.FullName + ". fieldInfo: " +
+                                                  fieldInfo.Name + ". view: " + obj.name);
+                        throw newEx;
+                    }
+#else
                     fieldInfo.SetValue(componentObj, value);
+#endif
+                    
                 }
             }
             AddParams[0] = entityId;
