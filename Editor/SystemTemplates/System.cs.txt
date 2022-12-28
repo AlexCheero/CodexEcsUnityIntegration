@@ -4,7 +4,7 @@ using ECS;
 [System(ESystemCategory.Update)]
 public class #SCRIPTNAME# : EcsSystem
 {
-    private int _filterId;
+    private readonly int _filterId;
 
     public #SCRIPTNAME#(EcsWorld world)
     {
