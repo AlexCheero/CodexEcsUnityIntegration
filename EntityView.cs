@@ -44,13 +44,13 @@ public class EntityView : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        var collidedView = collision.gameObject.GetComponent<EntityView>();
+        var collidedView = EntityViewHelper.GetOwnerEntityView(collision.gameObject);
         ProcessCollision(collidedView);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        ProcessCollision(other.GetComponent<EntityView>());
+        ProcessCollision(EntityViewHelper.GetOwnerEntityView(other));
     }
 
     private void ProcessCollision(EntityView collidedView)

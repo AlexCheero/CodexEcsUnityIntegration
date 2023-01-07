@@ -5,9 +5,9 @@ using UnityEngine;
 
 public static class WorldExtension
 {
-    public static void UnityDebugEntity(this EcsWorld world, string msg, Entity entity) => world.UnityDebugEntity(msg, entity.GetId());
+    public static void UnityDebugEntity(this EcsWorld world, Entity entity, string msg = "") => world.UnityDebugEntity(entity.GetId(), msg);
 
-    public static void UnityDebugEntity(this EcsWorld world, string msg, int id)
+    public static void UnityDebugEntity(this EcsWorld world, int id, string msg = "")
     {
         var sb = new StringBuilder(msg);
         world.DebugEntity(id, sb);
