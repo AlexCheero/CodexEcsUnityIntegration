@@ -6,12 +6,12 @@ using UnityEngine;
 public class EntityView : MonoBehaviour
 {
     public Entity Entity { get; private set; }
-    private EcsWorld _world;
+    public EcsWorld World { get; private set; }
     public int Id { get => Entity.GetId(); }
     public int Version { get => Entity.GetVersion(); }
 
 #if DEBUG
-    public bool IsValid { get => _world.IsEntityValid(Entity); }
+    public bool IsValid { get => World.IsEntityValid(Entity); }
 #endif
 
     [SerializeField]
@@ -19,26 +19,26 @@ public class EntityView : MonoBehaviour
 
     public int InitAsEntity(EcsWorld world)
     {
-        _world = world;
+        World = world;
 #if UNITY_EDITOR
         var entityId = IntegrationHelper.InitAsEntity(world, Data, this);
 #else
         var entityId = IntegrationHelper.InitAsEntity(world, Data);
 #endif
-        Entity = _world.GetById(entityId);
+        Entity = World.GetById(entityId);
         return entityId;
     }
 
-    public bool Have<T>() => _world.Have<T>(Id);
-    public void Add<T>(T component = default) => _world.Add<T>(Id, component);
-    public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(Id);
-    public void CopyFromEntity(Entity from) => _world.CopyComponents(from, Entity);
+    public bool Have<T>() => World.Have<T>(Id);
+    public void Add<T>(T component = default) => World.Add<T>(Id, component);
+    public ref T GetEcsComponent<T>() => ref World.GetComponent<T>(Id);
+    public void CopyFromEntity(Entity from) => World.CopyComponents(from, Entity);
 
-    public void DeleteFromWorld() => _world.Delete(Id);
+    public void DeleteFromWorld() => World.Delete(Id);
     
     public void DeleteSelf()
     {
-        _world.Delete(Id);
+        World.Delete(Id);
         Destroy(gameObject);
     }
 
