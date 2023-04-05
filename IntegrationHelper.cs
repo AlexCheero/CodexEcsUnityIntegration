@@ -5,9 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-#if UNITY_EDITOR
 using Object = UnityEngine.Object;
-#endif
 
 public class SystemAttribute : Attribute
 {
@@ -131,7 +129,7 @@ public static class IntegrationHelper
     public static bool IsUnityObject(Type type) => typeof(Object).IsAssignableFrom(type);
 
     private static readonly object[] AddParams = { null, null };
-#if UNITY_EDITOR
+#if DEBUG
     public static int InitAsEntity(EcsWorld world, in EntityMeta data, Object obj)
 #else
     public static int InitAsEntity(EcsWorld world, in EntityMeta data)
@@ -195,14 +193,14 @@ public static class IntegrationHelper
         return entityId;
     }
 
-#if UNITY_EDITOR
-    #region EntityInspectorHelper
+#region EntityInspectorHelper
     private static string[] GetTypeNames<SameAssemblyType>(Func<Type, bool> predicate)
     {
         var types = Assembly.GetAssembly(typeof(SameAssemblyType)).GetTypes().Where(predicate).ToArray();
         return Array.ConvertAll(types, (t) => t.FullName);
     }
 
+#if UNITY_EDITOR
     public static bool IsSearchMatch(string searchString, string name)
     {
         if (searchString == null || searchString.Length == 0)
@@ -443,6 +441,7 @@ public static class IntegrationHelper
         }
         EditorGUILayout.EndHorizontal();
     }
-    #endregion
 #endif
+
+#endregion
 }
