@@ -5,6 +5,7 @@ using UnityEngine;
 
 public static class WorldExtension
 {
+#if DEBUG
     public static void UnityDebugEntity(this EcsWorld world, Entity entity, string msg = "") => world.UnityDebugEntity(entity.GetId(), msg);
 
     public static void UnityDebugEntity(this EcsWorld world, int id, string msg = "")
@@ -13,4 +14,5 @@ public static class WorldExtension
         world.DebugEntity(id, sb);
         Debug.Log(sb);
     }
+#endif
 }

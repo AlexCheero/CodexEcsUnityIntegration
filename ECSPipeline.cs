@@ -2,6 +2,7 @@ using Components;
 using ECS;
 using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -47,7 +48,6 @@ public class ECSPipeline : MonoBehaviour
         }
     }
 
-#if UNITY_EDITOR
     [SerializeField]
     public bool[] _initSwitches = new bool[0];
     [SerializeField]
@@ -77,24 +77,32 @@ public class ECSPipeline : MonoBehaviour
                 throw new Exception("category not implemented: " + category.ToString());
         }
     }
-#endif
 
     void Start()
     {
         _world = new EcsWorld();
 
         var systemCtorParams = new object[] { _world };
+
+#if DEBUG
         _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams);
         _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams);
         _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams);
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
+#else
+        _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams)?.Where((n, i) => _initSwitches[i]).ToArray();
+        _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams)?.Where((n, i) => _updateSwitches[i]).ToArray();
+        _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateUpdateSwitches[i]).ToArray();
+        _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _fixedUpdateSwitches[i]).ToArray();
+        _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateFixedUpdateSwitches[i]).ToArray();
+#endif
 
         foreach (var view in FindObjectsOfType<EntityView>())
             view.InitAsEntity(_world);
 
         //call init systems after initing all the start entities
-#if UNITY_EDITOR
+#if DEBUG
         TickSystemCategory(_initSystems, _initSwitches);
 #else
         TickSystemCategory(_initSystems);
@@ -105,7 +113,7 @@ public class ECSPipeline : MonoBehaviour
 
     void Update()
     {
-#if UNITY_EDITOR
+#if DEBUG
         TickSystemCategory(_updateSystems, _updateSwitches);
 #else
         TickSystemCategory(_updateSystems);
@@ -114,7 +122,7 @@ public class ECSPipeline : MonoBehaviour
 
     void LateUpdate()
     {
-#if UNITY_EDITOR
+#if DEBUG
         TickSystemCategory(_lateUpdateSystems, _lateUpdateSwitches);
 #else
         TickSystemCategory(_lateUpdateSystems);
@@ -123,7 +131,7 @@ public class ECSPipeline : MonoBehaviour
 
     void FixedUpdate()
     {
-#if UNITY_EDITOR
+#if DEBUG
         TickSystemCategory(_fixedUpdateSystems, _fixedUpdateSwitches);
 #else
         TickSystemCategory(_fixedUpdateSystems);
@@ -137,7 +145,7 @@ public class ECSPipeline : MonoBehaviour
         {
             yield return _waitForFixedUpdate;
 
-#if UNITY_EDITOR
+#if DEBUG
             TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
 #else
             TickSystemCategory(_lateFixedUpdateSystems);
@@ -145,7 +153,7 @@ public class ECSPipeline : MonoBehaviour
         }
     }
 
-#if UNITY_EDITOR
+#if DEBUG
     private void TickSystemCategory(EcsSystem[] systems, bool[] switches)
 #else
     private void TickSystemCategory(EcsSystem[] systems)
@@ -156,7 +164,7 @@ public class ECSPipeline : MonoBehaviour
 
         for (int i = 0; i < systems.Length; i++)
         {
-#if UNITY_EDITOR
+#if DEBUG
             if (switches[i])
 #endif
                 systems[i].Tick(_world);
@@ -165,7 +173,7 @@ public class ECSPipeline : MonoBehaviour
 
     private EcsSystem[] CreateSystemsByNames(string[] names, object[] systemCtorParams)
     {
-        if (names.Length < 1)
+        if (names == null || names.Length < 1)
             return null;
 
         var systems = new EcsSystem[names.Length];
