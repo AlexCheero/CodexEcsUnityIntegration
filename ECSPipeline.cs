@@ -130,27 +130,27 @@ public class ECSPipeline : MonoBehaviour
         TickSystemCategory(_initSystems);
 #endif
 
-        _started = true;
         StartCoroutine(LateFixedUpdate());
     }
 
-    private bool _started;
-    void OnEnable()
+    public bool Paused { get; private set; }
+    public void Unpause()
     {
+        Paused = false;
 #if DEBUG
         TickSystemCategory(_enableSystems, _enableSwitches);
 #else
         TickSystemCategory(_enableSystems);
 #endif
 
-        if (_started)
-            StartCoroutine(LateFixedUpdate());
+        StartCoroutine(LateFixedUpdate());
     }
 
-    void OnDisable()
+    public void Pause()
     {
+        Paused = true;
 #if DEBUG
-        TickSystemCategory(_disableSystems, _disableSwitches);
+        TickSystemCategory(_disableSystems, _disableSwitches, true);
 #else
         TickSystemCategory(_disableSystems);
 #endif
@@ -191,6 +191,8 @@ public class ECSPipeline : MonoBehaviour
         while (true)
         {
             yield return _waitForFixedUpdate;
+            if (!gameObject.activeInHierarchy)
+                yield break;
 
 #if DEBUG
             TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
@@ -201,19 +203,19 @@ public class ECSPipeline : MonoBehaviour
     }
 
 #if DEBUG
-    private void TickSystemCategory(EcsSystem[] systems, bool[] switches)
+    private void TickSystemCategory(EcsSystem[] systems, bool[] switches, bool forceTick = false)
 #else
-    private void TickSystemCategory(EcsSystem[] systems)
+    private void TickSystemCategory(EcsSystem[] systems, bool forceTick = false)
 #endif
     {
-        if (!gameObject.activeInHierarchy)
-            return;
-
         if (systems == null)
             return;
 
         for (int i = 0; i < systems.Length; i++)
         {
+            bool shouldReturn = !forceTick && Paused;
+            if (shouldReturn)
+                return;
 #if DEBUG
             if (switches[i])
 #endif
