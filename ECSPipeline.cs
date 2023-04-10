@@ -206,6 +206,9 @@ public class ECSPipeline : MonoBehaviour
     private void TickSystemCategory(EcsSystem[] systems)
 #endif
     {
+        if (!gameObject.activeInHierarchy)
+            return;
+
         if (systems == null)
             return;
 
