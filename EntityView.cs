@@ -31,6 +31,7 @@ public class EntityView : MonoBehaviour
 
     public bool Have<T>() => World.Have<T>(Id);
     public void Add<T>(T component = default) => World.Add<T>(Id, component);
+    public ref T GetOrAdd<T>(T component = default) => ref World.GetOrAddComponent<T>(Id);
     public ref T GetEcsComponent<T>() => ref World.GetComponent<T>(Id);
     public void CopyFromEntity(Entity from) => World.CopyComponents(from, Entity);
 
