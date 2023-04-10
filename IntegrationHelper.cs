@@ -27,6 +27,8 @@ public enum ESystemCategory
     LateUpdate,
     FixedUpdate,
     LateFixedUpdate,
+    OnEnable,
+    OnDisable
 }
 
 public enum EGatheredTypeCategory

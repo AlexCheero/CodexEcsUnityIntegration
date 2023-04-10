@@ -15,12 +15,16 @@ public class Pipeline_Inspector : Editor
     private const string LateUpdateSystemsLabel = "Late Update Systems";
     private const string FixedSystemsLabel = "Fixed Update Systems";
     private const string LateFixedSystemsLabel = "Late Fixed Update Systems";
+    private const string EnableSystemsLabel = "On Enable Systems";
+    private const string DisableSystemsLabel = "On Disable Systems";
 
     private static List<string> initSystemTypeNames;
     private static List<string> updateSystemTypeNames;
     private static List<string> lateUpdateSystemTypeNames;
     private static List<string> fixedUpdateSystemTypeNames;
     private static List<string> lateFixedUpdateSystemTypeNames;
+    private static List<string> enableSystemTypeNames;
+    private static List<string> disableSystemTypeNames;
 
     private UnityEngine.Object[] systemScripts;
 
@@ -53,6 +57,8 @@ public class Pipeline_Inspector : Editor
         lateUpdateSystemTypeNames = new List<string>();
         fixedUpdateSystemTypeNames = new List<string>();
         lateFixedUpdateSystemTypeNames = new List<string>();
+        enableSystemTypeNames = new List<string>();
+        disableSystemTypeNames = new List<string>();
 
         foreach (var t in Assembly.GetAssembly(typeof(EcsSystem)).GetTypes())
         {
@@ -72,6 +78,10 @@ public class Pipeline_Inspector : Editor
                     fixedUpdateSystemTypeNames.Add(t.FullName);
                 if (category == ESystemCategory.LateFixedUpdate)
                     lateFixedUpdateSystemTypeNames.Add(t.FullName);
+                if (category == ESystemCategory.OnEnable)
+                    enableSystemTypeNames.Add(t.FullName);
+                if (category == ESystemCategory.OnDisable)
+                    disableSystemTypeNames.Add(t.FullName);
             }
         }
     }
@@ -95,6 +105,10 @@ public class Pipeline_Inspector : Editor
                     (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
                 DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystemTypeNames, Pipeline._lateFixedUpdateSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.LateFixedUpdate));
+                DrawAddList(EnableSystemsLabel, enableSystemTypeNames, Pipeline._enableSystemTypeNames,
+                    (name) => OnAddSystem(name, ESystemCategory.OnEnable));
+                DrawAddList(DisableSystemsLabel, disableSystemTypeNames, Pipeline._disableSystemTypeNames,
+                    (name) => OnAddSystem(name, ESystemCategory.OnDisable));
             EditorGUILayout.EndVertical();
         }
 
@@ -104,6 +118,8 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.LateUpdate);
         DrawSystemCategory(ESystemCategory.FixedUpdate);
         DrawSystemCategory(ESystemCategory.LateFixedUpdate);
+        DrawSystemCategory(ESystemCategory.OnEnable);
+        DrawSystemCategory(ESystemCategory.OnDisable);
     }
 
     private static bool ShouldSkipItem(string item, string[] skippedItems)
@@ -180,6 +196,14 @@ public class Pipeline_Inspector : Editor
             case ESystemCategory.LateFixedUpdate:
                 systems = Pipeline._lateFixedUpdateSystemTypeNames;
                 switches = Pipeline._lateFixedUpdateSwitches;
+                break;
+            case ESystemCategory.OnEnable:
+                systems = Pipeline._enableSystemTypeNames;
+                switches = Pipeline._enableSwitches;
+                break;
+            case ESystemCategory.OnDisable:
+                systems = Pipeline._disableSystemTypeNames;
+                switches = Pipeline._disableSwitches;
                 break;
             default:
                 return;

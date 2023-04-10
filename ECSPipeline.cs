@@ -16,6 +16,8 @@ public class ECSPipeline : MonoBehaviour
     private EcsSystem[] _lateUpdateSystems;
     private EcsSystem[] _fixedUpdateSystems;
     private EcsSystem[] _lateFixedUpdateSystems;//use for physics cleanup
+    private EcsSystem[] _enableSystems;
+    private EcsSystem[] _disableSystems;
 
     //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
     [SerializeField]
@@ -28,6 +30,10 @@ public class ECSPipeline : MonoBehaviour
     public string[] _fixedUpdateSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _lateFixedUpdateSystemTypeNames = new string[0];
+    [SerializeField]
+    public string[] _enableSystemTypeNames = new string[0];
+    [SerializeField]
+    public string[] _disableSystemTypeNames = new string[0];
 
     private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
     {
@@ -43,6 +49,10 @@ public class ECSPipeline : MonoBehaviour
                 return ref _fixedUpdateSystemTypeNames;
             case ESystemCategory.LateFixedUpdate:
                 return ref _lateFixedUpdateSystemTypeNames;
+            case ESystemCategory.OnEnable:
+                return ref _enableSystemTypeNames;
+            case ESystemCategory.OnDisable:
+                return ref _disableSystemTypeNames;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -58,6 +68,10 @@ public class ECSPipeline : MonoBehaviour
     public bool[] _fixedUpdateSwitches = new bool[0];
     [SerializeField]
     public bool[] _lateFixedUpdateSwitches = new bool[0];
+    [SerializeField]
+    public bool[] _enableSwitches = new bool[0];
+    [SerializeField]
+    public bool[] _disableSwitches = new bool[0];
 
     private ref bool[] GetSystemSwitchesByCategory(ESystemCategory category)
     {
@@ -73,6 +87,10 @@ public class ECSPipeline : MonoBehaviour
                 return ref _fixedUpdateSwitches;
             case ESystemCategory.LateFixedUpdate:
                 return ref _lateFixedUpdateSwitches;
+            case ESystemCategory.OnEnable:
+                return ref _enableSwitches;
+            case ESystemCategory.OnDisable:
+                return ref _disableSwitches;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -90,12 +108,16 @@ public class ECSPipeline : MonoBehaviour
         _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams);
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
+        _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams);
+        _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams);
 #else
         _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams)?.Where((n, i) => _initSwitches[i]).ToArray();
         _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams)?.Where((n, i) => _updateSwitches[i]).ToArray();
         _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateUpdateSwitches[i]).ToArray();
         _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _fixedUpdateSwitches[i]).ToArray();
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateFixedUpdateSwitches[i]).ToArray();
+        _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams)?.Where((n, i) => _enableSwitches[i]).ToArray();
+        _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams)?.Where((n, i) => _disableSwitches[i]).ToArray();
 #endif
 
         foreach (var view in FindObjectsOfType<EntityView>())
@@ -108,7 +130,32 @@ public class ECSPipeline : MonoBehaviour
         TickSystemCategory(_initSystems);
 #endif
 
+        _started = true;
         StartCoroutine(LateFixedUpdate());
+    }
+
+    private bool _started;
+    void OnEnable()
+    {
+#if DEBUG
+        TickSystemCategory(_enableSystems, _enableSwitches);
+#else
+        TickSystemCategory(_enableSystems);
+#endif
+
+        if (_started)
+            StartCoroutine(LateFixedUpdate());
+    }
+
+    void OnDisable()
+    {
+#if DEBUG
+        TickSystemCategory(_disableSystems, _disableSwitches);
+#else
+        TickSystemCategory(_disableSystems);
+#endif
+
+        StopAllCoroutines();
     }
 
     void Update()
