@@ -249,6 +249,8 @@ public class ECSPipeline : MonoBehaviour
         return systems;
     }
 
+    public int InitEntityFromPreset(EntityPreset preset) => preset.InitAsEntity(_world);
+
 #if UNITY_EDITOR
     public bool AddSystem(string systemName, ESystemCategory systemCategory)
     {
