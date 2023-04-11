@@ -133,10 +133,13 @@ public class ECSPipeline : MonoBehaviour
         StartCoroutine(LateFixedUpdate());
     }
 
-    public bool Paused { get; private set; }
+    public bool IsPaused { get; private set; }
     public void Unpause()
     {
-        Paused = false;
+        if (!IsPaused)
+            return;
+
+        IsPaused = false;
 #if DEBUG
         TickSystemCategory(_enableSystems, _enableSwitches);
 #else
@@ -148,7 +151,10 @@ public class ECSPipeline : MonoBehaviour
 
     public void Pause()
     {
-        Paused = true;
+        if (IsPaused)
+            return;
+
+        IsPaused = true;
 #if DEBUG
         TickSystemCategory(_disableSystems, _disableSwitches, true);
 #else
@@ -213,7 +219,7 @@ public class ECSPipeline : MonoBehaviour
 
         for (int i = 0; i < systems.Length; i++)
         {
-            bool shouldReturn = !forceTick && Paused;
+            bool shouldReturn = !forceTick && IsPaused;
             if (shouldReturn)
                 return;
 #if DEBUG
