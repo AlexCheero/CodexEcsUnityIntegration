@@ -35,6 +35,8 @@ public class ECSPipeline : MonoBehaviour
     [SerializeField]
     public string[] _disableSystemTypeNames = new string[0];
 
+    public EcsWorld World => _world;
+
     private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
     {
         switch (category)
@@ -248,8 +250,6 @@ public class ECSPipeline : MonoBehaviour
 
         return systems;
     }
-
-    public int InitEntityFromPreset(EntityPreset preset) => preset.InitAsEntity(_world);
 
 #if UNITY_EDITOR
     public bool AddSystem(string systemName, ESystemCategory systemCategory)
