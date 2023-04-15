@@ -160,7 +160,7 @@ public class ECSPipeline : MonoBehaviour
 #if DEBUG
         TickSystemCategory(_disableSystems, _disableSwitches, true);
 #else
-        TickSystemCategory(_disableSystems);
+        TickSystemCategory(_disableSystems, true);
 #endif
 
         StopAllCoroutines();
