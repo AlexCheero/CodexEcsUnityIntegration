@@ -66,41 +66,53 @@ public static class IntegrationHelper
 
     //TODO: unify with typenames from inspectors
     //TODO: why not use list?
-    private static Type[] EcsComponentTypes;
-    private static Type[] UnityObjectTypes;
-    private static Type[] SystemTypes;
-    private static Type[] EnumTypes;
+    private static Dictionary<string, Type> EcsComponentTypes;
+    private static Dictionary<string, Type> UnityObjectTypes;
+    private static Dictionary<string, Type> SystemTypes;
+    private static Dictionary<string, Type> EnumTypes;
 
     public static string[] ComponentTypeNames;
     public static string[] TagTypeNames;
 
     static IntegrationHelper()
     {
-        EcsComponentTypes = typeof(EntityView).Assembly.GetTypes()
-            .Where((t) => t.Namespace == Components || t.Namespace == Tags).ToArray();
+        EcsComponentTypes = TypeEnumerableToDict(typeof(EntityView).Assembly.GetTypes()
+            .Where((t) => t.Namespace == Components || t.Namespace == Tags));
 
         //TODO: could cause troubles with nested assemlies
         var types = new List<Type>();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             types.AddRange(assembly.GetTypes().Where((t) => typeof(Object).IsAssignableFrom(t)));
-        UnityObjectTypes = types.ToArray();
-        
+        UnityObjectTypes = TypeEnumerableToDict(types);
+
         var enumTypes = new List<Type>();
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             enumTypes.AddRange(assembly.GetTypes().Where((t) => t.IsEnum));
-        EnumTypes = enumTypes.ToArray();
+        EnumTypes = TypeEnumerableToDict(enumTypes);
 
-        SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
+        SystemTypes = TypeEnumerableToDict(typeof(ECSPipeline).Assembly.GetTypes()
             //TODO: duplicated from Pipeline_Inspector move to helper class
-            .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToArray();
+            .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)));
 
         ComponentTypeNames = GetTypeNames<EntityView>((t) => t.Namespace == Components);
         TagTypeNames = GetTypeNames<EntityView>((t) => t.Namespace == Tags);
     }
 
+    private static Dictionary<string, Type> TypeEnumerableToDict(IEnumerable<Type> types)
+    {
+        var dict = new Dictionary<string, Type>();
+        foreach (var tp in types)
+        {
+            if (!dict.ContainsKey(tp.FullName))
+                dict.Add(tp.FullName, tp);
+        }
+
+        return dict;
+    }
+
     public static Type GetTypeByName(string systemName, EGatheredTypeCategory category)
     {
-        Type[] types;
+        Dictionary<string, Type> types;
         switch (category)
         {
             case EGatheredTypeCategory.EcsComponent:
@@ -119,11 +131,8 @@ public static class IntegrationHelper
                 return null;
         }
 
-        foreach (var compType in types)
-        {
-            if (compType.FullName == systemName)
-                return compType;
-        }
+        if (types.ContainsKey(systemName))
+            return types[systemName];
 
         return null;
     }
