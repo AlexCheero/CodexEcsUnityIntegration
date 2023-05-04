@@ -51,8 +51,6 @@ public class EntityView_ : MonoBehaviour
             view.AddToWorld(World, entityId);
         GatherUnityComponents(World);
 
-        Add(GetComponent<Collider>());
-
         return entityId;
     }
 
@@ -61,22 +59,30 @@ public class EntityView_ : MonoBehaviour
         var unityComponents = GetComponents<Component>().Where(comp => !(comp is BaseComponentView)).ToArray();
         foreach (var unityComponent in unityComponents)
         {
-            var compType = IntegrationHelper.GetTypeByName(unityComponent.GetType().FullName, EGatheredTypeCategory.UnityObject);
-
             AddParams[0] = Id;
             AddParams[1] = unityComponent;
-
-            MethodInfo methodInfo;
-            if (GenericAddMethodInfos.ContainsKey(compType))
-                methodInfo = GenericAddMethodInfos[compType];
-            else
+            var compType = unityComponent.GetType();
+            do
             {
-                methodInfo = WorldAddMethodInfo.MakeGenericMethod(compType);
-                GenericAddMethodInfos.Add(compType, methodInfo);
+                AddUnityComponent(world, compType, AddParams);
+                compType = compType.BaseType;
             }
-
-            methodInfo.Invoke(world, AddParams);
+            while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) && compType != typeof(Component));
         }
+    }
+
+    private void AddUnityComponent(EcsWorld world, Type type, object[] addParams)
+    {
+        MethodInfo methodInfo;
+        if (GenericAddMethodInfos.ContainsKey(type))
+            methodInfo = GenericAddMethodInfos[type];
+        else
+        {
+            methodInfo = WorldAddMethodInfo.MakeGenericMethod(type);
+            GenericAddMethodInfos.Add(type, methodInfo);
+        }
+
+        methodInfo.Invoke(world, addParams);
     }
 
     public bool Have<T>() => World.Have<T>(Id);
