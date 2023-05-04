@@ -74,6 +74,8 @@ public static class IntegrationHelper
     public static string[] ComponentTypeNames;
     public static string[] TagTypeNames;
 
+    public static IEnumerable<Type> EcsTypes => EcsComponentTypes.Values;
+
     static IntegrationHelper()
     {
         EcsComponentTypes = TypeEnumerableToDict(typeof(EntityView).Assembly.GetTypes()

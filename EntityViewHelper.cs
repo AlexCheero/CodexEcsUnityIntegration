@@ -26,4 +26,28 @@ public static class EntityViewHelper
 
         return view;
     }
+
+    public static EntityView_ GetOwnerEntityView_(GameObject go)
+    {
+        var view = go.GetComponent<EntityView_>();
+        if (view != null)
+            return view;
+        var viewChild = go.GetComponent<EntityViewChild>();
+        if (viewChild != null)
+            view = viewChild.OwnerView_;
+
+        return view;
+    }
+
+    public static EntityView_ GetOwnerEntityView_(Component component)
+    {
+        var view = component.GetComponent<EntityView_>();
+        if (view != null)
+            return view;
+        var viewChild = component.GetComponent<EntityViewChild>();
+        if (viewChild != null)
+            view = viewChild.OwnerView_;
+
+        return view;
+    }
 }

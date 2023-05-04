@@ -124,6 +124,8 @@ public class ECSPipeline : MonoBehaviour
 
         foreach (var view in FindObjectsOfType<EntityView>())
             view.InitAsEntity(_world);
+        foreach (var view in FindObjectsOfType<EntityView_>())
+            view.InitAsEntity(_world);
 
         //call init systems after initing all the start entities
 #if DEBUG

@@ -2,7 +2,9 @@
 
 namespace Components
 {
-    struct CollisionWith
+    public interface IComponent { }
+
+    public struct CollisionWith : IComponent
     {
         public Entity entity;
     }
@@ -10,5 +12,7 @@ namespace Components
 
 namespace Tags
 {
-    struct OverrideCollision { }
+    public interface ITag { }
+
+    public struct OverrideCollision : ITag { }
 }
