@@ -2,6 +2,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
+#if UNITY_EDITOR
 public class ComponentViewConverter : MonoBehaviour
 {
     private static readonly string ComponentViewTemplate =
@@ -54,3 +55,4 @@ public class ComponentViewConverter : MonoBehaviour
         }
     }
 }
+#endif

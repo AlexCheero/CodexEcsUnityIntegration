@@ -22,13 +22,13 @@ public class ComponentView<T> : BaseComponentView
         world.Add(id, Component);
     }
 
+#if UNITY_EDITOR
     public override void UpdateFromWorld(EcsWorld world, int id)
     {
         var comp = world.GetComponent<T>(id);
         Component = comp;
     }
 
-#if UNITY_EDITOR
     private EntityView _owner;
     private EntityView Owner
     {
