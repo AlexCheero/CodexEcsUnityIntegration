@@ -7,6 +7,8 @@ public class ComponentViewConverter : MonoBehaviour
     private static readonly string ComponentViewTemplate =
         "using Components;\n" +
         "using Tags;\n" +
+        "using UnityEngine;\n" +
+        "[DisallowMultipleComponent]\n" +
         "public class <ComponentName>View : ComponentView<<ComponentName>>{}";
 
     private static readonly string ViewRegistratorTemplate =

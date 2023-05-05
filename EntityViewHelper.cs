@@ -27,26 +27,26 @@ public static class EntityViewHelper
         return view;
     }
 
-    public static EntityView_ GetOwnerEntityView_(GameObject go)
+    public static EntityView GetOwnerEntityView_(GameObject go)
     {
-        var view = go.GetComponent<EntityView_>();
+        var view = go.GetComponent<EntityView>();
         if (view != null)
             return view;
         var viewChild = go.GetComponent<EntityViewChild>();
         if (viewChild != null)
-            view = viewChild.OwnerView_;
+            view = viewChild.OwnerView;
 
         return view;
     }
 
-    public static EntityView_ GetOwnerEntityView_(Component component)
+    public static EntityView GetOwnerEntityView_(Component component)
     {
-        var view = component.GetComponent<EntityView_>();
+        var view = component.GetComponent<EntityView>();
         if (view != null)
             return view;
         var viewChild = component.GetComponent<EntityViewChild>();
         if (viewChild != null)
-            view = viewChild.OwnerView_;
+            view = viewChild.OwnerView;
 
         return view;
     }

@@ -29,17 +29,32 @@ public class ComponentView<T> : BaseComponentView
     }
 
 #if UNITY_EDITOR
-    private EntityView_ _owner;
-    private EntityView_ Owner
+    private EntityView _owner;
+    private EntityView Owner
     {
         get
         {
-            _owner ??= GetComponent<EntityView_>();
+            _owner ??= GetComponent<EntityView>();
             return _owner;
         }
     }
 
-    void OnValidate() => Owner.OnComponentValidate(this, Component);
+    private bool _canValidate;//hack to validate only after game started and initialized
+    void Start()
+    {
+        _canValidate = true;
+    }
+
+    void OnDisable()
+    {
+        _canValidate = false;
+    }
+
+    void OnValidate()
+    {
+        if (_canValidate)
+            Owner.OnComponentValidate(this, Component);
+    }
 
     void OnDestroy() => Owner.OnComponentDestroy<T>();
 

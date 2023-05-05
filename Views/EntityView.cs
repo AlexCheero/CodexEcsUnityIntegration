@@ -2,17 +2,18 @@ using Components;
 using ECS;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Reflection;
 using Tags;
 using UnityEngine;
 
-public class EntityView_ : MonoBehaviour
+public class EntityView : MonoBehaviour
 {
     private static MethodInfo WorldAddMethodInfo;
     private static Dictionary<Type, MethodInfo> GenericAddMethodInfos;
 
-    static EntityView_()
+    static EntityView()
     {
         WorldAddMethodInfo = typeof(EcsWorld).GetMethod("Add");
         GenericAddMethodInfos = new Dictionary<Type, MethodInfo>();
@@ -110,7 +111,7 @@ public class EntityView_ : MonoBehaviour
         ProcessCollision(EntityViewHelper.GetOwnerEntityView_(other));
     }
 
-    private void ProcessCollision(EntityView_ collidedView)
+    private void ProcessCollision(EntityView collidedView)
     {
         if (collidedView != null)
         {
@@ -123,7 +124,7 @@ public class EntityView_ : MonoBehaviour
         }
     }
 
-    private static void AddCollisionComponents(EntityView_ view, Entity otherEntity)
+    private static void AddCollisionComponents(EntityView view, Entity otherEntity)
     {
         if (view.Have<CollisionWith>())
         {
@@ -137,13 +138,19 @@ public class EntityView_ : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    private bool _validationGuard;//hack to not loose values on inspector update in late update
     public void OnComponentValidate<T>(BaseComponentView view, T component)
     {
+        if (_validationGuard)
+            return;
+
+        Debug.Log("OnComponentValidate");
         if (World == null || !World.IsEntityValid(Entity))
             return;
 
         _viewsByComponentType[typeof(T)] = view;
-        GetOrAdd<T>() = component;
+        if (component is IComponent)
+            GetOrAdd<T>() = component;
     }
 
     public void OnComponentDestroy<T>()
@@ -173,9 +180,11 @@ public class EntityView_ : MonoBehaviour
             if (!_viewsByComponentType.ContainsKey(type))
             {
                 var viewType = ViewRegistrator.GetViewTypeByCompType(type);
+                _validationGuard = true;
                 _viewsByComponentType[type] = gameObject.AddComponent(viewType) as BaseComponentView;
+                _validationGuard = false;
             }
-            
+
             if (isComponent)
                 _viewsByComponentType[type].UpdateFromWorld(World, Id);
         }
