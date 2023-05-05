@@ -94,10 +94,10 @@ public class EntityView : MonoBehaviour
 
     public void DeleteFromWorld() => World.Delete(Id);
 
-    public void DeleteSelf()
+    void OnDestroy()
     {
-        World.Delete(Id);
-        Destroy(gameObject);
+        if (World != null && World.IsEntityValid(Entity))
+            World.Delete(Id);
     }
 
     void OnCollisionEnter(Collision collision)

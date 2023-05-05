@@ -81,8 +81,8 @@ public static class IntegrationHelper
     static IntegrationHelper()
     {
         EcsComponentTypes = TypeEnumerableToDict(typeof(EntityView).Assembly.GetTypes()
-            //.Where((t) => typeof(IComponent).IsAssignableFrom(t) || typeof(ITag).IsAssignableFrom(t)));
-            .Where((t) => t.Namespace == Components || t.Namespace == Tags));
+            .Where((t) => typeof(IComponent).IsAssignableFrom(t) || typeof(ITag).IsAssignableFrom(t)));
+            //.Where((t) => t.Namespace == Components || t.Namespace == Tags));
 
         //TODO: could cause troubles with nested assemlies
         var types = new List<Type>();
