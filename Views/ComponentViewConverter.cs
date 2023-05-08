@@ -36,7 +36,7 @@ public class ComponentViewConverter : MonoBehaviour
         foreach (FileInfo file in dir.GetFiles())
             file.Delete();
 
-        foreach (var type in IntegrationHelper.EcsTypes)
+        foreach (var type in IntegrationHelper.EcsComponentTypes)
         {
             var viewCode = ComponentViewTemplate.Replace("<ComponentName>", type.Name);
             using (StreamWriter writer = new StreamWriter(ViewsPath + type.Name + "View.cs"))
@@ -46,7 +46,7 @@ public class ComponentViewConverter : MonoBehaviour
         }
 
         var registrationBody = "";
-        foreach (var type in IntegrationHelper.EcsTypes)
+        foreach (var type in IntegrationHelper.EcsComponentTypes)
             registrationBody += "\t\tViewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\n";
         var registratorCode = ViewRegistratorTemplate.Replace("<RegisterHere>", registrationBody);
         using (StreamWriter writer = new StreamWriter(ViewsPath + "ViewRegistrator.cs"))
