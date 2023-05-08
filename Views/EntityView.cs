@@ -41,6 +41,12 @@ public class EntityView : MonoBehaviour
 #endif
     }
 
+    public void ForceInit()
+    {
+        if (_componentViews == null || _componentViews.Length == 0)
+            _componentViews = GetComponents<BaseComponentView>();
+    }
+
     private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
