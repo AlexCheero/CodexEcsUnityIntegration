@@ -41,6 +41,12 @@ public class EntityView : MonoBehaviour
 #endif
     }
 
+    public void ForceInit()
+    {
+        if (_componentViews == null || _componentViews.Length == 0)
+            _componentViews = GetComponents<BaseComponentView>();
+    }
+
     private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
@@ -102,13 +108,13 @@ public class EntityView : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        var collidedView = EntityViewHelper.GetOwnerEntityView_(collision.gameObject);
+        var collidedView = EntityViewHelper.GetOwnerEntityView(collision.gameObject);
         ProcessCollision(collidedView);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        ProcessCollision(EntityViewHelper.GetOwnerEntityView_(other));
+        ProcessCollision(EntityViewHelper.GetOwnerEntityView(other));
     }
 
     private void ProcessCollision(EntityView collidedView)

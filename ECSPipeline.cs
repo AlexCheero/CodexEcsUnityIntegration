@@ -240,7 +240,7 @@ public class ECSPipeline : MonoBehaviour
 
         for (int i = 0; i < names.Length; i++)
         {
-            var systemType = IntegrationHelper.GetTypeByName(names[i], EGatheredTypeCategory.System);
+            var systemType = IntegrationHelper.SystemTypes[names[i]];
 #if DEBUG
             if (systemType == null)
                 throw new Exception("can't find system type " + names[i]);
