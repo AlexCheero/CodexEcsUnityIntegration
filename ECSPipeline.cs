@@ -1,16 +1,13 @@
-using Components;
 using ECS;
 using System;
 using System.Collections;
-using System.Linq;
-using System.Reflection;
 using UnityEngine;
 
 //TODO: add fields to init EcsCacheSettings
 public class ECSPipeline : MonoBehaviour
 {
     private EcsWorld _world;
-    
+
     private EcsSystem[] _initSystems;
     private EcsSystem[] _updateSystems;
     private EcsSystem[] _lateUpdateSystems;
@@ -34,8 +31,6 @@ public class ECSPipeline : MonoBehaviour
     public string[] _enableSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _disableSystemTypeNames = new string[0];
-
-    public EcsWorld World => _world;
 
     private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
     {
@@ -98,10 +93,9 @@ public class ECSPipeline : MonoBehaviour
         }
     }
 
-    void Start()
+    public void Init(EcsWorld world)
     {
-        _world = new EcsWorld();
-
+        _world = world;
         var systemCtorParams = new object[] { _world };
 
 #if DEBUG
@@ -121,17 +115,18 @@ public class ECSPipeline : MonoBehaviour
         _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams)?.Where((n, i) => _enableSwitches[i]).ToArray();
         _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams)?.Where((n, i) => _disableSwitches[i]).ToArray();
 #endif
+    }
 
-        foreach (var view in FindObjectsOfType<EntityView>())
-            view.InitAsEntity(_world);
-
-        //call init systems after initing all the start entities
+    public void Switch(bool on)
+    {
+        gameObject.SetActive(on);
+        if (!on)
+            return;
 #if DEBUG
         TickSystemCategory(_initSystems, _initSwitches);
 #else
         TickSystemCategory(_initSystems);
 #endif
-
         StartCoroutine(LateFixedUpdate());
     }
 
