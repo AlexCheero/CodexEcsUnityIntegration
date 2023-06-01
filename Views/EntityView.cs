@@ -150,7 +150,6 @@ public class EntityView : MonoBehaviour
         if (_validationGuard)
             return;
 
-        Debug.Log("OnComponentValidate");
         if (World == null || !World.IsEntityValid(Entity))
             return;
 
