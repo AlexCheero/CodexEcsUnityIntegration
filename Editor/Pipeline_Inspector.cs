@@ -1,6 +1,7 @@
 using ECS;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -26,7 +27,7 @@ public class Pipeline_Inspector : Editor
     private static List<string> enableSystemTypeNames;
     private static List<string> disableSystemTypeNames;
 
-    private UnityEngine.Object[] systemScripts;
+    private Dictionary<string, MonoScript> systemScripts;
 
     private bool _addListExpanded;
     private string _addSearch;
@@ -45,7 +46,12 @@ public class Pipeline_Inspector : Editor
 
     public override VisualElement CreateInspectorGUI()
     {
-        systemScripts = Resources.FindObjectsOfTypeAll(typeof(MonoScript));
+        var systems = Resources.FindObjectsOfTypeAll(typeof(MonoScript)).Where(obj =>
+        {
+            var monoScript = obj as MonoScript;
+            return monoScript != null && typeof(EcsSystem).IsAssignableFrom(monoScript.GetClass());
+        });
+        systemScripts = systems.ToDictionary(obj => obj.name, obj => obj as MonoScript);
 
         return base.CreateInspectorGUI();
     }
@@ -155,20 +161,7 @@ public class Pipeline_Inspector : Editor
         GUILayout.Space(10);
     }
 
-    private MonoScript GetSystemScriptByName(string name)
-    {
-        MonoScript systemScript = null;
-        foreach (var script in systemScripts)
-        {
-            if (script.name == name)
-            {
-                systemScript = script as MonoScript;
-                break;
-            }
-        }
-
-        return systemScript;
-    }
+    private MonoScript GetSystemScriptByName(string name) => systemScripts.ContainsKey(name) ? systemScripts[name] : null;
 
     private void DrawSystemCategory(ESystemCategory category)
     {
