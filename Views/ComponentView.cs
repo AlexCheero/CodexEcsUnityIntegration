@@ -56,7 +56,11 @@ public class ComponentView<T> : BaseComponentView
             Owner.OnComponentValidate(this, Component);
     }
 
-    void OnDestroy() => Owner.OnComponentDestroy<T>();
+    void OnDestroy()
+    {
+        if (Owner != null)
+            Owner.OnComponentDestroy<T>();
+    }
 
     public override Type GetEcsComponentType() => typeof(T);
 #endif
