@@ -3,6 +3,10 @@ using System;
 using System.Collections;
 using UnityEngine;
 
+#if !DEBUG
+using System.Linq;
+#endif
+
 //TODO: add fields to init EcsCacheSettings
 public class ECSPipeline : MonoBehaviour
 {
