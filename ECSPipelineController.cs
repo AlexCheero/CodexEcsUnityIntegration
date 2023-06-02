@@ -1,4 +1,5 @@
 using ECS;
+using Tags;
 using UnityEngine;
 
 public class ECSPipelineController : Singleton<ECSPipelineController>
@@ -55,4 +56,13 @@ public class ECSPipelineController : Singleton<ECSPipelineController>
 
     public void Pause() => CurrentPipeline.Pause();
     public void Unpause() => CurrentPipeline.Unpause();
+
+    public void CreateEntityWithComponent<T>(T comp = default)
+    {
+        var id = _world.Create();
+        if (comp is ITag)
+            _world.Add<T>(id);
+        else
+            _world.Add(id, comp);
+    }
 }
