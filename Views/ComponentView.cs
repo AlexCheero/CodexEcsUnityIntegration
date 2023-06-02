@@ -45,6 +45,7 @@ public class ComponentView<T> : BaseComponentView
         _canValidate = true;
     }
 
+    //TODO this breaks runtime instantiation
     //void OnEnable()
     //{
     //    if (Owner != null)
