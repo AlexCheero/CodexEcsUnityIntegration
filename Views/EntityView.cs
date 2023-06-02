@@ -158,7 +158,19 @@ public class EntityView : MonoBehaviour
             GetOrAdd<T>() = component;
     }
 
-    public void OnComponentDestroy<T>()
+    public void OnComponentEnable<T>(BaseComponentView view, T component)
+    {
+        if (World == null || !World.IsEntityValid(Entity))
+            return;
+
+        _viewsByComponentType[typeof(T)] = view;
+        if (component is IComponent)
+            GetOrAdd<T>() = component;
+        else if (component is ITag && !Have<T>())
+            Add<T>();
+    }
+
+    public void OnComponentDisable<T>()
     {
         if (World == null || !World.IsEntityValid(Entity))
             return;
