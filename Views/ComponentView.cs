@@ -45,11 +45,11 @@ public class ComponentView<T> : BaseComponentView
         _canValidate = true;
     }
 
-    void OnEnable()
-    {
-        if (Owner != null)
-            Owner.OnComponentEnable<T>(this, Component);
-    }
+    //void OnEnable()
+    //{
+    //    if (Owner != null)
+    //        Owner.OnComponentEnable(this, Component);
+    //}
 
     void OnDisable()
     {
