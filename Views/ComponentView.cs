@@ -45,21 +45,24 @@ public class ComponentView<T> : BaseComponentView
         _canValidate = true;
     }
 
+    //TODO this breaks runtime instantiation
+    //void OnEnable()
+    //{
+    //    if (Owner != null)
+    //        Owner.OnComponentEnable(this, Component);
+    //}
+
     void OnDisable()
     {
         _canValidate = false;
+        if (Owner != null)
+            Owner.OnComponentDisable<T>();
     }
 
     void OnValidate()
     {
         if (_canValidate)
             Owner.OnComponentValidate(this, Component);
-    }
-
-    void OnDestroy()
-    {
-        if (Owner != null)
-            Owner.OnComponentDestroy<T>();
     }
 
     public override Type GetEcsComponentType() => typeof(T);
