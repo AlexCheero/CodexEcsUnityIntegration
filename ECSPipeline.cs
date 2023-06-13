@@ -220,9 +220,9 @@ public class ECSPipeline : MonoBehaviour
 
         for (int i = 0; i < systems.Length; i++)
         {
-            bool shouldReturn = !forceTick && IsPaused;
+            bool shouldReturn = !forceTick && IsPaused && systems[i].IsPausable;
             if (shouldReturn)
-                return;
+                continue;
 #if DEBUG
             if (switches[i])
 #endif
