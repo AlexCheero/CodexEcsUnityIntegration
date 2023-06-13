@@ -52,12 +52,12 @@ public class ComponentView<T> : BaseComponentView
     //        Owner.OnComponentEnable(this, Component);
     //}
 
-    void OnDisable()
-    {
-        _canValidate = false;
-        if (Owner != null)
-            Owner.OnComponentDisable<T>();
-    }
+    //void OnDisable()
+    //{
+    //    _canValidate = false;
+    //    if (Owner != null)
+    //        Owner.OnComponentDisable<T>();
+    //}
 
     void OnValidate()
     {
