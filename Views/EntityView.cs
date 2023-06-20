@@ -12,11 +12,13 @@ public class EntityView : MonoBehaviour
 {
     private static MethodInfo WorldAddMethodInfo;
     private static Dictionary<Type, MethodInfo> GenericAddMethodInfos;
+    private static List<Component> _componentsBuffer;
 
     static EntityView()
     {
         WorldAddMethodInfo = typeof(EcsWorld).GetMethod("Add");
         GenericAddMethodInfos = new Dictionary<Type, MethodInfo>();
+        _componentsBuffer = new(32);
 
 #if UNITY_EDITOR
         ViewRegistrator.Register();
@@ -63,9 +65,12 @@ public class EntityView : MonoBehaviour
 
     private void GatherUnityComponents(EcsWorld world)
     {
-        var unityComponents = GetComponents<Component>().Where(comp => !(comp is BaseComponentView)).ToArray();
-        foreach (var unityComponent in unityComponents)
+        GetComponents(_componentsBuffer);//won't work for multithreading
+        foreach (var unityComponent in _componentsBuffer)
         {
+            if (unityComponent is BaseComponentView)
+                continue;
+
             AddParams[0] = Id;
             AddParams[1] = unityComponent;
             var compType = unityComponent.GetType();
