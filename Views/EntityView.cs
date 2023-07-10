@@ -26,12 +26,15 @@ public class EntityView : MonoBehaviour
     }
 
     private BaseComponentView[] _componentViews;
+    private EcsWorld _world;
+    private Entity _entity;
+    private int _id;
 
-    public Entity Entity { get; private set; }
-    public EcsWorld World { get; private set; }
-    public int Id { get => Entity.GetId(); }
-    public int Version { get => Entity.GetVersion(); }
-    public bool IsValid { get => World.IsEntityValid(Entity); }
+    public Entity Entity { get => _entity; private set => _entity = value; }
+    public EcsWorld World { get => _world; private set => _world = value; }
+    public int Id { get => _id; private set => _id = value; }
+    public int Version { get => _entity.GetVersion(); }
+    public bool IsValid { get => _world.IsEntityValid(_entity); }
 
     void Awake()
     {
@@ -52,15 +55,15 @@ public class EntityView : MonoBehaviour
     private static readonly object[] AddParams = { null, null };
     public int InitAsEntity(EcsWorld world)
     {
-        World = world;
-        var entityId = world.Create();
-        Entity = World.GetById(entityId);
+        _world = world;
+        _id = world.Create();
+        _entity = _world.GetById(_id);
 
         foreach (var view in _componentViews)
-            view.AddToWorld(World, entityId);
-        GatherUnityComponents(World);
+            view.AddToWorld(_world, _id);
+        GatherUnityComponents(_world);
 
-        return entityId;
+        return _id;
     }
 
     private void GatherUnityComponents(EcsWorld world)
@@ -71,7 +74,7 @@ public class EntityView : MonoBehaviour
             if (unityComponent is BaseComponentView)
                 continue;
 
-            AddParams[0] = Id;
+            AddParams[0] = _id;
             AddParams[1] = unityComponent;
             var compType = unityComponent.GetType();
             do
@@ -97,18 +100,18 @@ public class EntityView : MonoBehaviour
         methodInfo.Invoke(world, addParams);
     }
 
-    public bool Have<T>() => World.Have<T>(Id);
-    public void Add<T>(T component = default) => World.Add(Id, component);
-    public ref T GetOrAdd<T>() => ref World.GetOrAddComponent<T>(Id);
-    public ref T GetEcsComponent<T>() => ref World.GetComponent<T>(Id);
-    public void TryRemove<T>() => World.TryRemove<T>(Id);
+    public bool Have<T>() => _world.Have<T>(_id);
+    public void Add<T>(T component = default) => _world.Add(_id, component);
+    public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
+    public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(_id);
+    public void TryRemove<T>() => _world.TryRemove<T>(_id);
 
-    public void DeleteFromWorld() => World.Delete(Id);
+    public void DeleteFromWorld() => _world.Delete(_id);
 
     void OnDestroy()
     {
-        if (World != null && World.IsEntityValid(Entity))
-            World.Delete(Id);
+        if (_world != null && _world.IsEntityValid(_entity))
+            _world.Delete(_id);
     }
 
     void OnCollisionEnter(Collision collision)
@@ -126,8 +129,8 @@ public class EntityView : MonoBehaviour
     {
         if (collidedView != null)
         {
-            AddCollisionComponents(this, collidedView.Entity);
-            AddCollisionComponents(collidedView, Entity);
+            AddCollisionComponents(this, collidedView._entity);
+            AddCollisionComponents(collidedView, _entity);
         }
         else
         {
@@ -155,7 +158,7 @@ public class EntityView : MonoBehaviour
         if (_validationGuard)
             return;
 
-        if (World == null || !World.IsEntityValid(Entity))
+        if (_world == null || !_world.IsEntityValid(_entity))
             return;
 
         _viewsByComponentType[typeof(T)] = view;
@@ -165,7 +168,7 @@ public class EntityView : MonoBehaviour
 
     public void OnComponentEnable<T>(BaseComponentView view, T component)
     {
-        if (World == null || !World.IsEntityValid(Entity))
+        if (_world == null || !_world.IsEntityValid(_entity))
             return;
 
         _viewsByComponentType[typeof(T)] = view;
@@ -177,7 +180,7 @@ public class EntityView : MonoBehaviour
 
     public void OnComponentDisable<T>()
     {
-        if (World == null || !World.IsEntityValid(Entity))
+        if (_world == null || !_world.IsEntityValid(_entity))
             return;
 
         if (_viewsByComponentType.ContainsKey(typeof(T)))
@@ -191,7 +194,7 @@ public class EntityView : MonoBehaviour
 
     void LateUpdate()
     {
-        World.GetTypesForId(Id, _typesBuffer);
+        _world.GetTypesForId(_id, _typesBuffer);
         foreach (var type in _typesBuffer)
         {
             var isComponent = typeof(IComponent).IsAssignableFrom(type);
@@ -208,7 +211,7 @@ public class EntityView : MonoBehaviour
             }
 
             if (isComponent)
-                _viewsByComponentType[type].UpdateFromWorld(World, Id);
+                _viewsByComponentType[type].UpdateFromWorld(_world, _id);
         }
 
         _typesToCheck.Clear();
