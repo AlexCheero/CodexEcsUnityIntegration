@@ -1,6 +1,7 @@
 using ECS;
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 #if !DEBUG
@@ -131,7 +132,7 @@ public class ECSPipeline : MonoBehaviour
 #else
         TickSystemCategory(_initSystems);
 #endif
-        StartCoroutine(LateFixedUpdate());
+        StartLateFixedUpdateSystemsIfAny();
     }
 
     public bool IsPaused { get; private set; }
@@ -147,7 +148,7 @@ public class ECSPipeline : MonoBehaviour
         TickSystemCategory(_enableSystems);
 #endif
 
-        StartCoroutine(LateFixedUpdate());
+        StartLateFixedUpdateSystemsIfAny();
     }
 
     public void Pause()
@@ -190,6 +191,14 @@ public class ECSPipeline : MonoBehaviour
 #else
         TickSystemCategory(_fixedUpdateSystems);
 #endif
+    }
+
+    private bool StartLateFixedUpdateSystemsIfAny()
+    {
+        var shouldStart = _lateFixedUpdateSwitches.Length > 0 && _lateFixedUpdateSwitches.Any(systemSwitch => systemSwitch);
+        if (shouldStart)
+            StartCoroutine(LateFixedUpdate());
+        return shouldStart;
     }
 
     private readonly WaitForFixedUpdate _waitForFixedUpdate = new WaitForFixedUpdate();
