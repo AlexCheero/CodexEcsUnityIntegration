@@ -34,7 +34,7 @@ public class EntityView : MonoBehaviour
     public EcsWorld World { get => _world; private set => _world = value; }
     public int Id { get => _id; private set => _id = value; }
     public int Version { get => _entity.GetVersion(); }
-    public bool IsValid { get => _world.IsEntityValid(_entity); }
+    public bool IsValid { get => _world != null && _world.IsEntityValid(_entity); }
 
     void Awake()
     {
@@ -116,38 +116,27 @@ public class EntityView : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        var collidedView = EntityViewHelper.GetOwnerEntityView(collision.gameObject);
-        ProcessCollision(collidedView);
+        if (Have<CollisionComponent>())
+        {
+            if (Have<OverrideCollision>())
+                GetEcsComponent<CollisionComponent>().collision = collision;
+        }
+        else
+        {
+            Add(new CollisionComponent { collision = collision });
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        ProcessCollision(EntityViewHelper.GetOwnerEntityView(other));
-    }
-
-    private void ProcessCollision(EntityView collidedView)
-    {
-        if (collidedView != null)
+        if (Have<TriggerFireComponent>())
         {
-            AddCollisionComponents(this, collidedView._entity);
-            AddCollisionComponents(collidedView, _entity);
+            if (Have<OverrideTriggerFire>())
+                GetEcsComponent<TriggerFireComponent>().coliider = other;
         }
         else
         {
-            AddCollisionComponents(this, EntityExtension.NullEntity);
-        }
-    }
-
-    private static void AddCollisionComponents(EntityView view, Entity otherEntity)
-    {
-        if (view.Have<CollisionWith>())
-        {
-            if (view.Have<OverrideCollision>())
-                view.GetEcsComponent<CollisionWith>().entity = otherEntity;
-        }
-        else
-        {
-            view.Add(new CollisionWith { entity = otherEntity });
+            Add(new TriggerFireComponent { coliider = other });
         }
     }
 

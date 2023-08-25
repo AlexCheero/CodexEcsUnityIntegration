@@ -1,12 +1,18 @@
 ﻿using ECS;
+using UnityEngine;
 
 namespace Components
 {
     public interface IComponent { }
 
-    public struct CollisionWith : IComponent
+    public struct CollisionComponent : IComponent
     {
-        public Entity entity;
+        public Collision collision;
+    }
+
+    public struct TriggerFireComponent : IComponent
+    {
+        public Collider coliider;
     }
 }
 
@@ -15,4 +21,5 @@ namespace Tags
     public interface ITag { }
 
     public struct OverrideCollision : ITag { }
+    public struct OverrideTriggerFire : ITag { }
 }
