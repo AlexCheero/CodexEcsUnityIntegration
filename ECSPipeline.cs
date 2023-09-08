@@ -127,12 +127,30 @@ public class ECSPipeline : MonoBehaviour
         gameObject.SetActive(on);
         if (!on)
             return;
+
+        RunInitSystems();
+        StartLateFixedUpdateSystemsIfAny();
+    }
+
+    private void RunInitSystems()
+    {
 #if DEBUG
         TickSystemCategory(_initSystems, _initSwitches);
+        InitSystemCategory(_updateSystems, _updateSwitches);
+        InitSystemCategory(_lateUpdateSystems, _lateUpdateSwitches);
+        InitSystemCategory(_fixedUpdateSystems, _fixedUpdateSwitches);
+        InitSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
+        InitSystemCategory(_enableSystems, _enableSwitches);
+        InitSystemCategory(_disableSystems, _disableSwitches);
 #else
         TickSystemCategory(_initSystems);
+        InitSystemCategory(_updateSystems);
+        InitSystemCategory(_lateUpdateSystems);
+        InitSystemCategory(_fixedUpdateSystems);
+        InitSystemCategory(_lateFixedUpdateSystems);
+        InitSystemCategory(_enableSystems);
+        InitSystemCategory(_disableSystems);
 #endif
-        StartLateFixedUpdateSystemsIfAny();
     }
 
     public bool IsPaused { get; private set; }
@@ -215,6 +233,24 @@ public class ECSPipeline : MonoBehaviour
 #else
             TickSystemCategory(_lateFixedUpdateSystems);
 #endif
+        }
+    }
+
+#if DEBUG
+    private void InitSystemCategory(EcsSystem[] systems, bool[] switches, bool forceTick = false)
+#else
+    private void InitSystemCategory(EcsSystem[] systems, bool forceTick = false)
+#endif
+    {
+        if (systems == null)
+            return;
+
+        for (int i = 0; i < systems.Length; i++)
+        {
+#if DEBUG
+            if (switches[i])
+#endif
+                systems[i].Init(_world);
         }
     }
 
