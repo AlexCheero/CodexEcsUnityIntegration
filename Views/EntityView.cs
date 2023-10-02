@@ -116,14 +116,19 @@ public class EntityView : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
+        var collisionComponent = new CollisionComponent
+        {
+            collider = collision.collider,
+            contactPoint = collision.GetContact(0).point
+        };
         if (Have<CollisionComponent>())
         {
             if (Have<OverrideCollision>())
-                GetEcsComponent<CollisionComponent>().collision = collision;
+                GetEcsComponent<CollisionComponent>() = collisionComponent;
         }
         else
         {
-            Add(new CollisionComponent { collision = collision });
+            Add(collisionComponent);
         }
     }
 

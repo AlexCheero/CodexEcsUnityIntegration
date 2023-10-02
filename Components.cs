@@ -7,7 +7,8 @@ namespace Components
 
     public struct CollisionComponent : IComponent
     {
-        public Collision collision;
+        public Vector3 contactPoint;
+        public Collider collider;
     }
 
     public struct TriggerFireComponent : IComponent
