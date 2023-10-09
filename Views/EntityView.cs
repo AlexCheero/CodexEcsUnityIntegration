@@ -2,7 +2,6 @@ using Components;
 using ECS;
 using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.Linq;
 using System.Reflection;
 using Tags;
@@ -36,6 +35,7 @@ public class EntityView : MonoBehaviour
     public int Version { get => _entity.GetVersion(); }
     public bool IsValid { get => _world != null && _world.IsEntityValid(_entity); }
 
+    //TODO: maybe move to void OnValidate()
     void Awake()
     {
         _componentViews = GetComponents<BaseComponentView>();
@@ -50,6 +50,12 @@ public class EntityView : MonoBehaviour
     {
         if (_componentViews == null || _componentViews.Length == 0)
             _componentViews = GetComponents<BaseComponentView>();
+
+#if UNITY_EDITOR
+        _viewsByComponentType ??= _componentViews.ToDictionary(view => view.GetEcsComponentType(), view => view);
+        _typesToCheck ??= new HashSet<Type>(_viewsByComponentType.Keys);
+        _typesBuffer ??= new HashSet<Type>(_viewsByComponentType.Keys);
+#endif
     }
 
     private static readonly object[] AddParams = { null, null };
