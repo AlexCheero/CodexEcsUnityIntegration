@@ -66,4 +66,9 @@ public class ECSPipelineController : Singleton<ECSPipelineController>
         else
             _world.Add(id, comp);
     }
+
+    public void ReRunInit()
+    {
+        CurrentPipeline.RunInitSystems();
+    }
 }

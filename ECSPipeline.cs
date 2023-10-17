@@ -132,7 +132,7 @@ public class ECSPipeline : MonoBehaviour
         StartLateFixedUpdateSystemsIfAny();
     }
 
-    private void RunInitSystems()
+    public void RunInitSystems()
     {
 #if DEBUG
         TickSystemCategory(_initSystems, _initSwitches);
