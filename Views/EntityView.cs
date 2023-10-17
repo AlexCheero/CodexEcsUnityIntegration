@@ -194,6 +194,9 @@ public class EntityView : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!IsValid)
+            return;
+
         _world.GetTypesForId(_id, _typesBuffer);
         foreach (var type in _typesBuffer)
         {
