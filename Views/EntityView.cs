@@ -55,7 +55,7 @@ public class EntityView : MonoBehaviour
             do
             {
                 if (!ComponentTypeToIdMapping.Mapping.ContainsKey(compType))
-                    CallStaticCtor(compType);
+                    CallStaticCtorForComponentMeta(compType);
                 list.Add(Tuple.Create(compType, component));
                 compType = compType.BaseType;
             }
@@ -65,14 +65,11 @@ public class EntityView : MonoBehaviour
         return list;
     }
 
-    private void CallStaticCtor(Type type)
+    private void CallStaticCtorForComponentMeta(Type type)
     {
         var genericType = typeof(ComponentMeta<>);
-        var specificType1 = genericType.MakeGenericType(type);
-
-        var staticConstructor = specificType1.TypeInitializer;
-        if (staticConstructor != null)
-            staticConstructor.Invoke(null, null);
+        var specificType = genericType.MakeGenericType(type);
+        specificType.TypeInitializer?.Invoke(null, null);
     }
 
     public int InitAsEntity(EcsWorld world)
