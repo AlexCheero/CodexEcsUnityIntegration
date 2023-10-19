@@ -3,25 +3,16 @@ using ECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Tags;
 using UnityEngine;
 
 public class EntityView : MonoBehaviour
 {
-    private static MethodInfo WorldAddMethodInfo;
-    private static Dictionary<Type, MethodInfo> GenericAddMethodInfos;
-    private static List<Component> _componentsBuffer;
+    private List<Tuple<Type, Component>> _componentsBuffer;
 
     static EntityView()
     {
-        WorldAddMethodInfo = typeof(EcsWorld).GetMethod("Add");
-        GenericAddMethodInfos = new Dictionary<Type, MethodInfo>();
-        _componentsBuffer = new(32);
-
-#if UNITY_EDITOR
         ViewRegistrator.Register();
-#endif
     }
 
     private BaseComponentView[] _componentViews;
@@ -36,20 +27,13 @@ public class EntityView : MonoBehaviour
     public bool IsValid { get => _world != null && _world.IsEntityValid(_entity); }
 
     //TODO: maybe move to void OnValidate()
-    void Awake()
-    {
-        _componentViews = GetComponents<BaseComponentView>();
-#if UNITY_EDITOR
-        _viewsByComponentType = _componentViews.ToDictionary(view => view.GetEcsComponentType(), view => view);
-        _typesToCheck = new HashSet<Type>(_viewsByComponentType.Keys);
-        _typesBuffer = new HashSet<Type>(_viewsByComponentType.Keys);
-#endif
-    }
-
-    public void ForceInit()
+    void Awake() => Init();
+    public void Init()
     {
         if (_componentViews == null || _componentViews.Length == 0)
             _componentViews = GetComponents<BaseComponentView>();
+        if (_componentsBuffer == null || _componentsBuffer.Count == 0)
+            _componentsBuffer = GatherUnityComponents();
 
 #if UNITY_EDITOR
         _viewsByComponentType ??= _componentViews.ToDictionary(view => view.GetEcsComponentType(), view => view);
@@ -58,7 +42,39 @@ public class EntityView : MonoBehaviour
 #endif
     }
 
-    private static readonly object[] AddParams = { null, null };
+    private List<Tuple<Type, Component>> GatherUnityComponents()
+    {
+        var allComponents = GetComponents<Component>();
+        var list = new List<Tuple<Type, Component>>();
+        foreach (var component in allComponents)
+        {
+            if (component is BaseComponentView)
+                continue;
+
+            var compType = component.GetType();
+            do
+            {
+                if (!ComponentTypeToIdMapping.Mapping.ContainsKey(compType))
+                    CallStaticCtor(compType);
+                list.Add(Tuple.Create(compType, component));
+                compType = compType.BaseType;
+            }
+            while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) && compType != typeof(Component));
+        }
+
+        return list;
+    }
+
+    private void CallStaticCtor(Type type)
+    {
+        var genericType = typeof(ComponentMeta<>);
+        var specificType1 = genericType.MakeGenericType(type);
+
+        var staticConstructor = specificType1.TypeInitializer;
+        if (staticConstructor != null)
+            staticConstructor.Invoke(null, null);
+    }
+
     public int InitAsEntity(EcsWorld world)
     {
         _world = world;
@@ -67,43 +83,15 @@ public class EntityView : MonoBehaviour
 
         foreach (var view in _componentViews)
             view.AddToWorld(_world, _id);
-        GatherUnityComponents(_world);
+        RegisterUnityComponents(_world);
 
         return _id;
     }
 
-    private void GatherUnityComponents(EcsWorld world)
+    private void RegisterUnityComponents(EcsWorld world)
     {
-        GetComponents(_componentsBuffer);//won't work for multithreading
-        foreach (var unityComponent in _componentsBuffer)
-        {
-            if (unityComponent is BaseComponentView)
-                continue;
-
-            AddParams[0] = _id;
-            AddParams[1] = unityComponent;
-            var compType = unityComponent.GetType();
-            do
-            {
-                AddUnityComponent(world, compType, AddParams);
-                compType = compType.BaseType;
-            }
-            while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) && compType != typeof(Component));
-        }
-    }
-
-    private void AddUnityComponent(EcsWorld world, Type type, object[] addParams)
-    {
-        MethodInfo methodInfo;
-        if (GenericAddMethodInfos.ContainsKey(type))
-            methodInfo = GenericAddMethodInfos[type];
-        else
-        {
-            methodInfo = WorldAddMethodInfo.MakeGenericMethod(type);
-            GenericAddMethodInfos.Add(type, methodInfo);
-        }
-
-        methodInfo.Invoke(world, addParams);
+        foreach (var componentTuple in _componentsBuffer)
+            world.AddReference(componentTuple.Item1, _id, componentTuple.Item2);
     }
 
     public bool Have<T>() => _world.Have<T>(_id);

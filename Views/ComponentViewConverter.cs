@@ -17,12 +17,14 @@ public class ComponentViewConverter : MonoBehaviour
         "using System.Collections.Generic;\n" +
         "using Components;\n" +
         "using Tags;\n" +
+        "using ECS;\n" +
         "public static class ViewRegistrator\n" +
         "{\n" +
         "\tprivate static Dictionary<Type, Type> ViewsByCompTypes = new();\n" +
         "\tpublic static Type GetViewTypeByCompType(Type compType) => ViewsByCompTypes[compType];\n\n" +
         "\tpublic static void Register()\n" +
         "\t{\n" +
+        "\t\tint id;\n" +
         "<RegisterHere>" +
         "\t}\n" +
         "}";
@@ -47,7 +49,8 @@ public class ComponentViewConverter : MonoBehaviour
 
         var registrationBody = "";
         foreach (var type in IntegrationHelper.EcsComponentTypes)
-            registrationBody += "\t\tViewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\n";
+            registrationBody += "\t\tViewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\n" +
+                "\t\tid = ComponentMeta<" + type.Name + ">.Id;\n";
         var registratorCode = ViewRegistratorTemplate.Replace("<RegisterHere>", registrationBody);
         using (StreamWriter writer = new StreamWriter(ViewsPath + "ViewRegistrator.cs"))
         {
