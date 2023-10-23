@@ -55,4 +55,8 @@ namespace Tags
 
     public struct OverrideCollision : ITag { }
     public struct OverrideTriggerFire : ITag { }
+
+    public struct ApplyEcsTransformTag : ITag { }
+    public struct ApplyEcsLocalTransformTag : ITag { }
+    public struct ApplyEcsTransformScaleTag : ITag { }
 }

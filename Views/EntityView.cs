@@ -26,6 +26,59 @@ public class EntityView : MonoBehaviour
     public int Version { get => _entity.GetVersion(); }
     public bool IsValid { get => _world != null && _world.IsEntityValid(_entity); }
 
+    #region EcsTransform
+    public Vector3 Position
+    {
+        get => GetEcsComponent<EcsTransform>().position;
+        set
+        {
+            GetEcsComponent<EcsTransform>().position = value;
+            if (!Have<ApplyEcsTransformTag>())
+                Add<ApplyEcsTransformTag>();
+        }
+    }
+    public Quaternion Rotation
+    {
+        get => GetEcsComponent<EcsTransform>().rotation;
+        set
+        {
+            GetEcsComponent<EcsTransform>().rotation = value;
+            if (!Have<ApplyEcsTransformTag>())
+                Add<ApplyEcsTransformTag>();
+        }
+    }
+    public Vector3 LocalPosition
+    {
+        get => GetEcsComponent<EcsTransform>().LocalPosition;
+        set
+        {
+            GetEcsComponent<EcsTransform>().LocalPosition = value;
+            if (!Have<ApplyEcsLocalTransformTag>())
+                Add<ApplyEcsLocalTransformTag>();
+        }
+    }
+    public Quaternion LocalRotation
+    {
+        get => GetEcsComponent<EcsTransform>().LocalRotation;
+        set
+        {
+            GetEcsComponent<EcsTransform>().LocalRotation = value;
+            if (!Have<ApplyEcsLocalTransformTag>())
+                Add<ApplyEcsLocalTransformTag>();
+        }
+    }
+    public Vector3 Scale
+    {
+        get => GetEcsComponent<EcsTransform>().scale;
+        set
+        {
+            GetEcsComponent<EcsTransform>().scale = value;
+            if (!Have<ApplyEcsTransformScaleTag>())
+                Add<ApplyEcsTransformScaleTag>();
+        }
+    }
+    #endregion
+
     //TODO: maybe move to void OnValidate()
     void Awake() => Init();
     public void Init()
@@ -82,7 +135,7 @@ public class EntityView : MonoBehaviour
             view.AddToWorld(_world, _id);
         RegisterUnityComponents(_world);
 
-        Add<EcsTransform>();
+        Add(new EcsTransform { scale = Vector3.one });
 
         return _id;
     }
