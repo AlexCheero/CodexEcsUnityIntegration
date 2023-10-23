@@ -18,6 +18,7 @@ public class Pipeline_Inspector : Editor
     private const string LateFixedSystemsLabel = "Late Fixed Update Systems";
     private const string EnableSystemsLabel = "On Enable Systems";
     private const string DisableSystemsLabel = "On Disable Systems";
+    private const string ReactiveSystemsLabel = "On Add Reactive Systems";
 
     private static List<string> initSystemTypeNames;
     private static List<string> updateSystemTypeNames;
@@ -26,6 +27,7 @@ public class Pipeline_Inspector : Editor
     private static List<string> lateFixedUpdateSystemTypeNames;
     private static List<string> enableSystemTypeNames;
     private static List<string> disableSystemTypeNames;
+    private static List<string> reactiveSystemTypeNames;
 
     private Dictionary<string, MonoScript> systemScripts;
 
@@ -58,13 +60,14 @@ public class Pipeline_Inspector : Editor
 
     static Pipeline_Inspector()
     {
-        initSystemTypeNames = new List<string>();
-        updateSystemTypeNames = new List<string>();
-        lateUpdateSystemTypeNames = new List<string>();
-        fixedUpdateSystemTypeNames = new List<string>();
-        lateFixedUpdateSystemTypeNames = new List<string>();
-        enableSystemTypeNames = new List<string>();
-        disableSystemTypeNames = new List<string>();
+        initSystemTypeNames = new();
+        updateSystemTypeNames = new();
+        lateUpdateSystemTypeNames = new();
+        fixedUpdateSystemTypeNames = new();
+        lateFixedUpdateSystemTypeNames = new();
+        enableSystemTypeNames = new();
+        disableSystemTypeNames = new();
+        reactiveSystemTypeNames = new();
 
         foreach (var t in Assembly.GetAssembly(typeof(EcsSystem)).GetTypes())
         {
@@ -88,6 +91,8 @@ public class Pipeline_Inspector : Editor
                     enableSystemTypeNames.Add(t.FullName);
                 if (category == ESystemCategory.OnDisable)
                     disableSystemTypeNames.Add(t.FullName);
+                if (category == ESystemCategory.Reactive)
+                    reactiveSystemTypeNames.Add(t.FullName);
             }
         }
     }
@@ -115,6 +120,8 @@ public class Pipeline_Inspector : Editor
                     (name) => OnAddSystem(name, ESystemCategory.OnEnable));
                 DrawAddList(DisableSystemsLabel, disableSystemTypeNames, Pipeline._disableSystemTypeNames,
                     (name) => OnAddSystem(name, ESystemCategory.OnDisable));
+                DrawAddList(ReactiveSystemsLabel, reactiveSystemTypeNames, Pipeline._reactiveSystemTypeNames,
+                    (name) => OnAddSystem(name, ESystemCategory.Reactive));
             EditorGUILayout.EndVertical();
         }
 
@@ -126,6 +133,7 @@ public class Pipeline_Inspector : Editor
         DrawSystemCategory(ESystemCategory.LateFixedUpdate);
         DrawSystemCategory(ESystemCategory.OnEnable);
         DrawSystemCategory(ESystemCategory.OnDisable);
+        DrawSystemCategory(ESystemCategory.Reactive);
     }
 
     private static bool ShouldSkipItem(string item, string[] skippedItems)
@@ -197,6 +205,10 @@ public class Pipeline_Inspector : Editor
             case ESystemCategory.OnDisable:
                 systems = Pipeline._disableSystemTypeNames;
                 switches = Pipeline._disableSwitches;
+                break;
+            case ESystemCategory.Reactive:
+                systems = Pipeline._reactiveSystemTypeNames;
+                switches = Pipeline._reactiveSwitches;
                 break;
             default:
                 return;

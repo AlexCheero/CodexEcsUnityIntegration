@@ -20,6 +20,7 @@ public class ECSPipeline : MonoBehaviour
     private EcsSystem[] _lateFixedUpdateSystems;//use for physics cleanup
     private EcsSystem[] _enableSystems;
     private EcsSystem[] _disableSystems;
+    private EcsSystem[] _addSystems;
 
     //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
     [SerializeField]
@@ -36,6 +37,8 @@ public class ECSPipeline : MonoBehaviour
     public string[] _enableSystemTypeNames = new string[0];
     [SerializeField]
     public string[] _disableSystemTypeNames = new string[0];
+    [SerializeField]
+    public string[] _reactiveSystemTypeNames = new string[0];
 
     private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
     {
@@ -55,6 +58,8 @@ public class ECSPipeline : MonoBehaviour
                 return ref _enableSystemTypeNames;
             case ESystemCategory.OnDisable:
                 return ref _disableSystemTypeNames;
+            case ESystemCategory.Reactive:
+                return ref _reactiveSystemTypeNames;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -74,6 +79,8 @@ public class ECSPipeline : MonoBehaviour
     public bool[] _enableSwitches = new bool[0];
     [SerializeField]
     public bool[] _disableSwitches = new bool[0];
+    [SerializeField]
+    public bool[] _reactiveSwitches = new bool[0];
 
     private ref bool[] GetSystemSwitchesByCategory(ESystemCategory category)
     {
@@ -93,6 +100,8 @@ public class ECSPipeline : MonoBehaviour
                 return ref _enableSwitches;
             case ESystemCategory.OnDisable:
                 return ref _disableSwitches;
+            case ESystemCategory.Reactive:
+                return ref _reactiveSwitches;
             default:
                 throw new Exception("category not implemented: " + category.ToString());
         }
@@ -111,6 +120,7 @@ public class ECSPipeline : MonoBehaviour
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
         _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams);
         _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams);
+        _addSystems = CreateSystemsByNames(_reactiveSystemTypeNames, systemCtorParams);
 #else
         _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams)?.Where((n, i) => _initSwitches[i]).ToArray();
         _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams)?.Where((n, i) => _updateSwitches[i]).ToArray();
@@ -119,6 +129,7 @@ public class ECSPipeline : MonoBehaviour
         _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateFixedUpdateSwitches[i]).ToArray();
         _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams)?.Where((n, i) => _enableSwitches[i]).ToArray();
         _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams)?.Where((n, i) => _disableSwitches[i]).ToArray();
+        _addSystems = CreateSystemsByNames(_reactiveSystemTypeNames, systemCtorParams)?.Where((n, i) => _reactiveSwitches[i]).ToArray();
 #endif
     }
 

@@ -19,7 +19,8 @@ public enum ESystemCategory
     FixedUpdate,
     LateFixedUpdate,
     OnEnable,
-    OnDisable
+    OnDisable,
+    Reactive
 }
 
 public static class IntegrationHelper
