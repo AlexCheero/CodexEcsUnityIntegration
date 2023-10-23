@@ -82,6 +82,8 @@ public class EntityView : MonoBehaviour
             view.AddToWorld(_world, _id);
         RegisterUnityComponents(_world);
 
+        Add<EcsTransform>();
+
         return _id;
     }
 
