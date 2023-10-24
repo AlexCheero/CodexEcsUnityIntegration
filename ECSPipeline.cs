@@ -284,6 +284,8 @@ public class ECSPipeline : MonoBehaviour
 #endif
                 systems[i].Tick(_world);
         }
+
+        _world.CallReactiveSystems();
     }
 
     private EcsSystem[] CreateSystemsByNames(string[] names, object[] systemCtorParams)
