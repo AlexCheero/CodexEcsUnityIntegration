@@ -128,11 +128,11 @@ public class EntityView : MonoBehaviour
         if (Have<TriggerFireComponent>())
         {
             if (Have<OverrideTriggerFire>())
-                GetEcsComponent<TriggerFireComponent>().coliider = other;
+                GetEcsComponent<TriggerFireComponent>().collider = other;
         }
         else
         {
-            Add(new TriggerFireComponent { coliider = other });
+            Add(new TriggerFireComponent { collider = other });
         }
     }
 

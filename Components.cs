@@ -13,7 +13,7 @@ namespace Components
 
     public struct TriggerFireComponent : IComponent
     {
-        public Collider coliider;
+        public Collider collider;
     }
 }
 
