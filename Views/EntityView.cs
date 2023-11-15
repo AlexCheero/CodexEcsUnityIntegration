@@ -194,7 +194,9 @@ public class EntityView : MonoBehaviour
             {
                 var viewType = ViewRegistrator.GetViewTypeByCompType(type);
                 _validationGuard = true;
-                _viewsByComponentType[type] = gameObject.AddComponent(viewType) as BaseComponentView;
+                _viewsByComponentType[type] = gameObject.GetComponent(viewType) as BaseComponentView;
+                if (_viewsByComponentType[type] == null)
+                    _viewsByComponentType[type] = gameObject.AddComponent(viewType) as BaseComponentView;
                 _validationGuard = false;
             }
 
