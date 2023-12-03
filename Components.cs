@@ -11,7 +11,12 @@ namespace Components
         public Collider collider;
     }
 
-    public struct TriggerFireComponent : IComponent
+    public struct TriggerEnterComponent : IComponent
+    {
+        public Collider collider;
+    }
+
+    public struct TriggerExitComponent : IComponent
     {
         public Collider collider;
     }
@@ -22,5 +27,6 @@ namespace Tags
     public interface ITag { }
 
     public struct OverrideCollision : ITag { }
-    public struct OverrideTriggerFire : ITag { }
+    public struct OverrideTriggerEnter : ITag { }
+    public struct OverrideTriggerExit : ITag { }
 }

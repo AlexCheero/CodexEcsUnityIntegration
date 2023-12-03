@@ -95,6 +95,7 @@ public class EntityView : MonoBehaviour
     public void Add<T>(T component = default) => _world.Add(_id, component);
     public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
     public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(_id);
+    public void Remove<T>() => _world.Remove<T>(_id);
     public void TryRemove<T>() => _world.TryRemove<T>(_id);
 
     public void DeleteFromWorld() => _world.Delete(_id);
@@ -125,14 +126,27 @@ public class EntityView : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (Have<TriggerFireComponent>())
+        if (Have<TriggerEnterComponent>())
         {
-            if (Have<OverrideTriggerFire>())
-                GetEcsComponent<TriggerFireComponent>().collider = other;
+            if (Have<OverrideTriggerEnter>())
+                GetEcsComponent<TriggerEnterComponent>().collider = other;
         }
         else
         {
-            Add(new TriggerFireComponent { collider = other });
+            Add(new TriggerEnterComponent { collider = other });
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (Have<TriggerExitComponent>())
+        {
+            if (Have<OverrideTriggerExit>())
+                GetEcsComponent<TriggerExitComponent>().collider = other;
+        }
+        else
+        {
+            Add(new TriggerExitComponent { collider = other });
         }
     }
 
