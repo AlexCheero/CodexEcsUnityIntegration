@@ -14,7 +14,7 @@ public class ECSPipelineController : Singleton<ECSPipelineController>
     public EcsWorld World => _world;
     public bool IsPaused => CurrentPipeline.IsPaused;
 
-    private ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
+    public ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
 
     void Start()
     {

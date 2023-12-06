@@ -1,26 +1,26 @@
 using ECS;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
-#if !DEBUG
-using System.Linq;
-#endif
 
 //TODO: add fields to init EcsCacheSettings
 public class ECSPipeline : MonoBehaviour
 {
     private EcsWorld _world;
 
-    private EcsSystem[] _initSystems;
-    private EcsSystem[] _updateSystems;
-    private EcsSystem[] _lateUpdateSystems;
-    private EcsSystem[] _fixedUpdateSystems;
-    private EcsSystem[] _lateFixedUpdateSystems;//use for physics cleanup
-    private EcsSystem[] _enableSystems;
-    private EcsSystem[] _disableSystems;
-    private EcsSystem[] _addSystems;
+    private struct SystemData
+    {
+        public EcsSystem System;
+        public bool Switch;
+    }
+
+    private Dictionary<ESystemCategory, Dictionary<Type, int>> _systemToIndexMapping;
+    private Dictionary<ESystemCategory, EcsSystem[]> _systems;
+
+    private EcsSystem[] GetSystemByCategory(ESystemCategory category) =>
+        _systems.ContainsKey(category) ? _systems[category] : null;
 
     //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
     [SerializeField]
@@ -112,25 +112,17 @@ public class ECSPipeline : MonoBehaviour
         _world = world;
         var systemCtorParams = new object[] { _world };
 
-#if DEBUG
-        _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams);
-        _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams);
-        _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams);
-        _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams);
-        _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams);
-        _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams);
-        _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams);
-        _addSystems = CreateSystemsByNames(_reactiveSystemTypeNames, systemCtorParams);
-#else
-        _initSystems = CreateSystemsByNames(_initSystemTypeNames, systemCtorParams)?.Where((n, i) => _initSwitches[i]).ToArray();
-        _updateSystems = CreateSystemsByNames(_updateSystemTypeNames, systemCtorParams)?.Where((n, i) => _updateSwitches[i]).ToArray();
-        _lateUpdateSystems = CreateSystemsByNames(_lateUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateUpdateSwitches[i]).ToArray();
-        _fixedUpdateSystems = CreateSystemsByNames(_fixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _fixedUpdateSwitches[i]).ToArray();
-        _lateFixedUpdateSystems = CreateSystemsByNames(_lateFixedUpdateSystemTypeNames, systemCtorParams)?.Where((n, i) => _lateFixedUpdateSwitches[i]).ToArray();
-        _enableSystems = CreateSystemsByNames(_enableSystemTypeNames, systemCtorParams)?.Where((n, i) => _enableSwitches[i]).ToArray();
-        _disableSystems = CreateSystemsByNames(_disableSystemTypeNames, systemCtorParams)?.Where((n, i) => _disableSwitches[i]).ToArray();
-        _addSystems = CreateSystemsByNames(_reactiveSystemTypeNames, systemCtorParams)?.Where((n, i) => _reactiveSwitches[i]).ToArray();
-#endif
+        _systemToIndexMapping = new();
+        _systems = new();
+
+        CreateSystemsByNames(ESystemCategory.Init, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.Update, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.LateUpdate, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.FixedUpdate, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.LateFixedUpdate, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.OnEnable, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.OnDisable, systemCtorParams);
+        CreateSystemsByNames(ESystemCategory.Reactive, systemCtorParams);
     }
 
     public void Switch(bool on)
@@ -145,23 +137,13 @@ public class ECSPipeline : MonoBehaviour
 
     public void RunInitSystems()
     {
-#if DEBUG
-        TickSystemCategory(_initSystems, _initSwitches);
-        InitSystemCategory(_updateSystems, _updateSwitches);
-        InitSystemCategory(_lateUpdateSystems, _lateUpdateSwitches);
-        InitSystemCategory(_fixedUpdateSystems, _fixedUpdateSwitches);
-        InitSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
-        InitSystemCategory(_enableSystems, _enableSwitches);
-        InitSystemCategory(_disableSystems, _disableSwitches);
-#else
-        TickSystemCategory(_initSystems);
-        InitSystemCategory(_updateSystems);
-        InitSystemCategory(_lateUpdateSystems);
-        InitSystemCategory(_fixedUpdateSystems);
-        InitSystemCategory(_lateFixedUpdateSystems);
-        InitSystemCategory(_enableSystems);
-        InitSystemCategory(_disableSystems);
-#endif
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.Init), _initSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.Update), _updateSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.LateUpdate), _lateUpdateSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.FixedUpdate), _fixedUpdateSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.LateFixedUpdate), _lateFixedUpdateSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.OnEnable), _enableSwitches);
+        InitSystemCategory(GetSystemByCategory(ESystemCategory.OnDisable), _disableSwitches);
     }
 
     public bool IsPaused { get; private set; }
@@ -171,12 +153,7 @@ public class ECSPipeline : MonoBehaviour
             return;
 
         IsPaused = false;
-#if DEBUG
-        TickSystemCategory(_enableSystems, _enableSwitches);
-#else
-        TickSystemCategory(_enableSystems);
-#endif
-
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.OnEnable), _enableSwitches);
         StartLateFixedUpdateSystemsIfAny();
     }
 
@@ -186,40 +163,23 @@ public class ECSPipeline : MonoBehaviour
             return;
 
         IsPaused = true;
-#if DEBUG
-        TickSystemCategory(_disableSystems, _disableSwitches, true);
-#else
-        TickSystemCategory(_disableSystems, true);
-#endif
-
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.OnDisable), _disableSwitches, true);
         StopAllCoroutines();
     }
 
     void Update()
     {
-#if DEBUG
-        TickSystemCategory(_updateSystems, _updateSwitches);
-#else
-        TickSystemCategory(_updateSystems);
-#endif
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.Update), _updateSwitches);
     }
 
     void LateUpdate()
     {
-#if DEBUG
-        TickSystemCategory(_lateUpdateSystems, _lateUpdateSwitches);
-#else
-        TickSystemCategory(_lateUpdateSystems);
-#endif
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.LateUpdate), _lateUpdateSwitches);
     }
 
     void FixedUpdate()
     {
-#if DEBUG
-        TickSystemCategory(_fixedUpdateSystems, _fixedUpdateSwitches);
-#else
-        TickSystemCategory(_fixedUpdateSystems);
-#endif
+        TickSystemCategory(GetSystemByCategory(ESystemCategory.FixedUpdate), _fixedUpdateSwitches);
     }
 
     private bool StartLateFixedUpdateSystemsIfAny()
@@ -239,37 +199,23 @@ public class ECSPipeline : MonoBehaviour
             if (!gameObject.activeInHierarchy)
                 yield break;
 
-#if DEBUG
-            TickSystemCategory(_lateFixedUpdateSystems, _lateFixedUpdateSwitches);
-#else
-            TickSystemCategory(_lateFixedUpdateSystems);
-#endif
+            TickSystemCategory(GetSystemByCategory(ESystemCategory.LateFixedUpdate), _lateFixedUpdateSwitches);
         }
     }
 
-#if DEBUG
-    private void InitSystemCategory(EcsSystem[] systems, bool[] switches, bool forceTick = false)
-#else
-    private void InitSystemCategory(EcsSystem[] systems, bool forceTick = false)
-#endif
+    private void InitSystemCategory(EcsSystem[] systems, bool[] switches)
     {
         if (systems == null)
             return;
 
         for (int i = 0; i < systems.Length; i++)
         {
-#if DEBUG
             if (switches[i])
-#endif
                 systems[i].Init(_world);
         }
     }
 
-#if DEBUG
     private void TickSystemCategory(EcsSystem[] systems, bool[] switches, bool forceTick = false)
-#else
-    private void TickSystemCategory(EcsSystem[] systems, bool forceTick = false)
-#endif
     {
         if (systems == null)
             return;
@@ -279,33 +225,39 @@ public class ECSPipeline : MonoBehaviour
             bool shouldReturn = !forceTick && IsPaused && systems[i].IsPausable;
             if (shouldReturn)
                 continue;
-#if DEBUG
             if (switches[i])
-#endif
                 systems[i].Tick(_world);
         }
 
         _world.CallReactiveSystems();
     }
 
-    private EcsSystem[] CreateSystemsByNames(string[] names, object[] systemCtorParams)
+    private void CreateSystemsByNames(ESystemCategory category, object[] systemCtorParams)
     {
+        var names = GetSystemTypeNamesByCategory(category);
         if (names == null || names.Length < 1)
-            return null;
+            return;
 
         var systems = new EcsSystem[names.Length];
 
+        _systemToIndexMapping[category] = new();
         for (int i = 0; i < names.Length; i++)
         {
             var systemType = IntegrationHelper.SystemTypes[names[i]];
-#if DEBUG
             if (systemType == null)
                 throw new Exception("can't find system type " + names[i]);
-#endif
+            _systemToIndexMapping[category][systemType] = i;
             systems[i] = (EcsSystem)Activator.CreateInstance(systemType, systemCtorParams);
         }
 
-        return systems;
+        _systems[category] = systems;
+    }
+
+    public void SwitchSystem<T>(ESystemCategory category, bool on) where T : EcsSystem
+    {
+        var systemIndex = _systemToIndexMapping[category][typeof(T)];
+        var switches = GetSystemSwitchesByCategory(category);
+        switches[systemIndex] = on;
     }
 
 #if UNITY_EDITOR
