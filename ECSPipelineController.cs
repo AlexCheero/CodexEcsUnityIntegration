@@ -1,7 +1,6 @@
 using CodexECS;
-using CodexFramework.CodexEcsUnityIntegration.Tags;
 using CodexFramework.CodexEcsUnityIntegration.Views;
-using MyFramework;
+using CodexFramework.Utils;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration
