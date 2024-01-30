@@ -1,29 +1,32 @@
-
+using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
 
-public static class EntityViewHelper
+namespace CodexFramework.CodexEcsUnityIntegration
 {
-    public static EntityView GetOwnerEntityView(GameObject go)
+    public static class EntityViewHelper
     {
-        var view = go.GetComponent<EntityView>();
-        if (view != null)
-            return view;
-        var viewChild = go.GetComponent<EntityViewChild>();
-        if (viewChild != null)
-            view = viewChild.OwnerView;
+        public static EntityView GetOwnerEntityView(GameObject go)
+        {
+            var view = go.GetComponent<EntityView>();
+            if (view != null)
+                return view;
+            var viewChild = go.GetComponent<EntityViewChild>();
+            if (viewChild != null)
+                view = viewChild.OwnerView;
 
-        return view;
-    }
-    
-    public static EntityView GetOwnerEntityView(Component component)
-    {
-        var view = component.GetComponent<EntityView>();
-        if (view != null)
             return view;
-        var viewChild = component.GetComponent<EntityViewChild>();
-        if (viewChild != null)
-            view = viewChild.OwnerView;
+        }
 
-        return view;
+        public static EntityView GetOwnerEntityView(Component component)
+        {
+            var view = component.GetComponent<EntityView>();
+            if (view != null)
+                return view;
+            var viewChild = component.GetComponent<EntityViewChild>();
+            if (viewChild != null)
+                view = viewChild.OwnerView;
+
+            return view;
+        }
     }
 }

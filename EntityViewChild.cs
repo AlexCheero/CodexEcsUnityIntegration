@@ -1,9 +1,13 @@
+using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
 
-public class EntityViewChild : MonoBehaviour
+namespace CodexFramework.CodexEcsUnityIntegration
 {
-    [SerializeField]
-    private EntityView _ownerView;
+    public class EntityViewChild : MonoBehaviour
+    {
+        [SerializeField]
+        private EntityView _ownerView;
 
-    public EntityView OwnerView => _ownerView;
+        public EntityView OwnerView => _ownerView;
+    }
 }

@@ -1,10 +1,8 @@
 ﻿using CodexECS;
 using UnityEngine;
 
-namespace Components
+namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
-    public interface IComponent { }
-
     public struct CollisionComponent : IComponent
     {
         public Vector3 contactPoint;
@@ -22,10 +20,8 @@ namespace Components
     }
 }
 
-namespace Tags
+namespace CodexFramework.CodexEcsUnityIntegration.Tags
 {
-    public interface ITag { }
-
     public struct OverrideCollision : ITag { }
     public struct OverrideTriggerEnter : ITag { }
     public struct OverrideTriggerExit : ITag { }

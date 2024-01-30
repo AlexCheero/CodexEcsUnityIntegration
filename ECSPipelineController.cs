@@ -1,74 +1,78 @@
 using CodexECS;
+using CodexFramework.CodexEcsUnityIntegration.Tags;
+using CodexFramework.CodexEcsUnityIntegration.Views;
 using MyFramework;
-using Tags;
 using UnityEngine;
 
-public class ECSPipelineController : Singleton<ECSPipelineController>
+namespace CodexFramework.CodexEcsUnityIntegration
 {
-    [SerializeField]
-    private ECSPipeline[] _pipelines;
-
-    private EcsWorld _world;
-    private int _currentPipelineIdx;
-
-    public EcsWorld World => _world;
-    public bool IsPaused => CurrentPipeline.IsPaused;
-
-    public ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
-
-    void Start()
+    public class ECSPipelineController : Singleton<ECSPipelineController>
     {
-        _world = new EcsWorld();
+        [SerializeField]
+        private ECSPipeline[] _pipelines;
 
-        foreach (var pipeline in _pipelines)
+        private EcsWorld _world;
+        private int _currentPipelineIdx;
+
+        public EcsWorld World => _world;
+        public bool IsPaused => CurrentPipeline.IsPaused;
+
+        public ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
+
+        void Start()
         {
-            pipeline.Init(_world);
-            pipeline.Switch(false);
+            _world = new EcsWorld();
+
+            foreach (var pipeline in _pipelines)
+            {
+                pipeline.Init(_world);
+                pipeline.Switch(false);
+            }
+
+            foreach (var view in FindObjectsOfType<EntityView>())
+                view.InitAsEntity(_world);
+
+            SwitchPipeline(0);
         }
 
-        foreach (var view in FindObjectsOfType<EntityView>())
-            view.InitAsEntity(_world);
-
-        SwitchPipeline(0);
-    }
-
-    public void SwitchPipeline(int idx)
-    {
+        public void SwitchPipeline(int idx)
+        {
 #if DEBUG
-        if (idx < 0 || idx >= _pipelines.Length)
-        {
-            Debug.LogError("pipeline index out of range");
-            return;
-        }
+            if (idx < 0 || idx >= _pipelines.Length)
+            {
+                Debug.LogError("pipeline index out of range");
+                return;
+            }
 #endif
 
-        _currentPipelineIdx = idx;
-        for (int i = 0; i < _pipelines.Length; i++)
-            _pipelines[i].Switch(i == idx);
-    }
+            _currentPipelineIdx = idx;
+            for (int i = 0; i < _pipelines.Length; i++)
+                _pipelines[i].Switch(i == idx);
+        }
 
-    public void TogglePause()
-    {
-        if (CurrentPipeline.IsPaused)
-            CurrentPipeline.Unpause();
-        else
-            CurrentPipeline.Pause();
-    }
+        public void TogglePause()
+        {
+            if (CurrentPipeline.IsPaused)
+                CurrentPipeline.Unpause();
+            else
+                CurrentPipeline.Pause();
+        }
 
-    public void Pause() => CurrentPipeline.Pause();
-    public void Unpause() => CurrentPipeline.Unpause();
+        public void Pause() => CurrentPipeline.Pause();
+        public void Unpause() => CurrentPipeline.Unpause();
 
-    public void CreateEntityWithComponent<T>(T comp = default)
-    {
-        var id = _world.Create();
-        if (comp is ITag)
-            _world.Add<T>(id);
-        else
-            _world.Add(id, comp);
-    }
+        public void CreateEntityWithComponent<T>(T comp = default)
+        {
+            var id = _world.Create();
+            if (comp is ITag)
+                _world.Add<T>(id);
+            else
+                _world.Add(id, comp);
+        }
 
-    public void ReRunInit()
-    {
-        CurrentPipeline.RunInitSystems();
+        public void ReRunInit()
+        {
+            CurrentPipeline.RunInitSystems();
+        }
     }
 }

@@ -1,38 +1,41 @@
 using UnityEditor;
 
-static class SystemTemplateCreator
+namespace CodexFramework.CodexEcsUnityIntegration.Editor
 {
-    private const string IntegrationFolderName = "EcsUnityIntegration";
-    private const string PathToTemplatesLocalToIntegration = "/Editor/SystemTemplates/";
-
-    private const string Extension = ".cs.txt";
-
-    private static readonly string SystemTemplatePath;
-
-    static SystemTemplateCreator()
+    static class SystemTemplateCreator
     {
-        var pathToEcsUnityIntegration = GetPathToEcsUnityIntegration();
-        SystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + "System" + Extension;
-    }
+        private const string IntegrationFolderName = "EcsUnityIntegration";
+        private const string PathToTemplatesLocalToIntegration = "/Editor/SystemTemplates/";
 
-    [MenuItem("Assets/Create/ECS/Systems/New system", false, -1)]
-    private static void NewInitSystem()
-    {
-        ProjectWindowUtil.CreateScriptAssetFromTemplateFile(SystemTemplatePath, "NewSystem.cs");
-    }
+        private const string Extension = ".cs.txt";
 
-    private static string GetPathToEcsUnityIntegration(string startFolder = "Assets")
-    {
-        var folders = AssetDatabase.GetSubFolders(startFolder);
-        foreach (var folder in folders)
+        private static readonly string SystemTemplatePath;
+
+        static SystemTemplateCreator()
         {
-            if (folder.Contains(IntegrationFolderName))
-                return folder;
-            var inner = GetPathToEcsUnityIntegration(folder);
-            if (inner.Contains(IntegrationFolderName))
-                return inner;
+            var pathToEcsUnityIntegration = GetPathToEcsUnityIntegration();
+            SystemTemplatePath = pathToEcsUnityIntegration + PathToTemplatesLocalToIntegration + "System" + Extension;
         }
 
-        return string.Empty;
+        [MenuItem("Assets/Create/ECS/Systems/New system", false, -1)]
+        private static void NewInitSystem()
+        {
+            ProjectWindowUtil.CreateScriptAssetFromTemplateFile(SystemTemplatePath, "NewSystem.cs");
+        }
+
+        private static string GetPathToEcsUnityIntegration(string startFolder = "Assets")
+        {
+            var folders = AssetDatabase.GetSubFolders(startFolder);
+            foreach (var folder in folders)
+            {
+                if (folder.Contains(IntegrationFolderName))
+                    return folder;
+                var inner = GetPathToEcsUnityIntegration(folder);
+                if (inner.Contains(IntegrationFolderName))
+                    return inner;
+            }
+
+            return string.Empty;
+        }
     }
 }

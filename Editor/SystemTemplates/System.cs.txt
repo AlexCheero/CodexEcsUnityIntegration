@@ -1,4 +1,4 @@
-using ECS;
+using CodexECS;
 
 //choose system type here
 [System(ESystemCategory.Update)]

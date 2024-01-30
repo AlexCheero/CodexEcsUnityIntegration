@@ -1,70 +1,72 @@
 ﻿using CodexECS;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class BaseComponentView : MonoBehaviour
+namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
-    public abstract void AddToWorld(EcsWorld world, int id);
+    public abstract class BaseComponentView : MonoBehaviour
+    {
+        public abstract void AddToWorld(EcsWorld world, int id);
 
 #if UNITY_EDITOR
-    public abstract Type GetEcsComponentType();
-    public abstract void UpdateFromWorld(EcsWorld world, int id);
+        public abstract Type GetEcsComponentType();
+        public abstract void UpdateFromWorld(EcsWorld world, int id);
 #endif
-}
-
-public class ComponentView<T> : BaseComponentView
-{
-    public T Component;
-
-    public override void AddToWorld(EcsWorld world, int id)
-    {
-        world.Add(id, Component);
     }
 
-#if UNITY_EDITOR
-    public override void UpdateFromWorld(EcsWorld world, int id)
+    public class ComponentView<T> : BaseComponentView
     {
-        var comp = world.GetComponent<T>(id);
-        Component = comp;
-    }
+        public T Component;
 
-    private EntityView _owner;
-    private EntityView Owner
-    {
-        get
+        public override void AddToWorld(EcsWorld world, int id)
         {
-            _owner ??= GetComponent<EntityView>();
-            return _owner;
+            world.Add(id, Component);
         }
-    }
 
-    private bool _canValidate;//hack to validate only after game started and initialized
-    void Start()
-    {
-        _canValidate = true;
-    }
+#if UNITY_EDITOR
+        public override void UpdateFromWorld(EcsWorld world, int id)
+        {
+            var comp = world.GetComponent<T>(id);
+            Component = comp;
+        }
 
-    //TODO this breaks runtime instantiation
-    //void OnEnable()
-    //{
-    //    if (Owner != null)
-    //        Owner.OnComponentEnable(this, Component);
-    //}
+        private EntityView _owner;
+        private EntityView Owner
+        {
+            get
+            {
+                _owner ??= GetComponent<EntityView>();
+                return _owner;
+            }
+        }
 
-    //void OnDisable()
-    //{
-    //    _canValidate = false;
-    //    if (Owner != null)
-    //        Owner.OnComponentDisable<T>();
-    //}
+        private bool _canValidate;//hack to validate only after game started and initialized
+        void Start()
+        {
+            _canValidate = true;
+        }
 
-    void OnValidate()
-    {
-        if (_canValidate)
-            Owner.OnComponentValidate(this, Component);
-    }
+        //TODO this breaks runtime instantiation
+        //void OnEnable()
+        //{
+        //    if (Owner != null)
+        //        Owner.OnComponentEnable(this, Component);
+        //}
 
-    public override Type GetEcsComponentType() => typeof(T);
+        //void OnDisable()
+        //{
+        //    _canValidate = false;
+        //    if (Owner != null)
+        //        Owner.OnComponentDisable<T>();
+        //}
+
+        void OnValidate()
+        {
+            if (_canValidate)
+                Owner.OnComponentValidate(this, Component);
+        }
+
+        public override Type GetEcsComponentType() => typeof(T);
 #endif
+    }
 }
