@@ -1,5 +1,5 @@
 
-using ECS;
+using CodexECS;
 using UnityEngine;
 
 public static class WorldExtension

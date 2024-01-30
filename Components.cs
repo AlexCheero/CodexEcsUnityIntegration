@@ -1,4 +1,4 @@
-﻿using ECS;
+﻿using CodexECS;
 using UnityEngine;
 
 namespace Components
