@@ -63,5 +63,5 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             }
         }
     }
-}
 #endif
+}
