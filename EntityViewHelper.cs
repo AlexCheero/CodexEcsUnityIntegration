@@ -7,11 +7,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
     {
         public static EntityView GetOwnerEntityView(GameObject go)
         {
-            var view = go.GetComponent<EntityView>();
-            if (view != null)
+            if (go.TryGetComponent<EntityView>(out var view))
                 return view;
-            var viewChild = go.GetComponent<EntityViewChild>();
-            if (viewChild != null)
+            if (go.TryGetComponent<EntityViewChild>(out var viewChild))
                 view = viewChild.OwnerView;
 
             return view;
@@ -19,11 +17,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         public static EntityView GetOwnerEntityView(Component component)
         {
-            var view = component.GetComponent<EntityView>();
-            if (view != null)
+            if (component.TryGetComponent<EntityView>(out var view))
                 return view;
-            var viewChild = component.GetComponent<EntityViewChild>();
-            if (viewChild != null)
+            if (component.TryGetComponent<EntityViewChild>(out var viewChild))
                 view = viewChild.OwnerView;
 
             return view;
