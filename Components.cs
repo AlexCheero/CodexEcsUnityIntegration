@@ -7,6 +7,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     {
         public Vector3 contactPoint;
         public Collider collider;
+        public Rigidbody rb;
     }
 
     public struct TriggerEnterComponent : IComponent

@@ -113,7 +113,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             var collisionComponent = new CollisionComponent
             {
                 collider = collision.collider,
-                contactPoint = collision.GetContact(0).point
+                contactPoint = collision.GetContact(0).point,
+                rb = collision.rigidbody
             };
             if (Have<CollisionComponent>())
             {
