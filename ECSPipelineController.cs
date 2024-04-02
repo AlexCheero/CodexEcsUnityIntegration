@@ -18,8 +18,11 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         public ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
 
-        void Start()
+        //previously was void Start()
+        protected override void Init()
         {
+            base.Init();
+            
             _world = new EcsWorld();
 
             foreach (var pipeline in _pipelines)
