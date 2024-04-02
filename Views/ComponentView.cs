@@ -6,6 +6,17 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     public abstract class BaseComponentView : MonoBehaviour
     {
+        private EntityView _owner;
+        public EntityView Owner
+        {
+            get
+            {
+                if (_owner == null)
+                    _owner = GetComponent<EntityView>();
+                return _owner;
+            }
+        }
+
         public abstract void AddToWorld(EcsWorld world, int id);
 
 #if UNITY_EDITOR
@@ -28,16 +39,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             var comp = world.GetComponent<T>(id);
             Component = comp;
-        }
-
-        private EntityView _owner;
-        private EntityView Owner
-        {
-            get
-            {
-                _owner ??= GetComponent<EntityView>();
-                return _owner;
-            }
         }
 
         private bool _canValidate;//hack to validate only after game started and initialized
