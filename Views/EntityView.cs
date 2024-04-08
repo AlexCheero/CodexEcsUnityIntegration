@@ -80,6 +80,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             _id = world.Create();
             _entity = _world.GetById(_id);
 
+            if (_componentViews == null)
+                Init();
+            
             foreach (var view in _componentViews)
                 view.AddToWorld(_world, _id);
             RegisterUnityComponents(_world);
