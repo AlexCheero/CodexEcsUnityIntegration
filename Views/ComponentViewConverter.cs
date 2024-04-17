@@ -25,8 +25,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             "using CodexECS;\n" +
             "public static class ViewRegistrator\n" +
             "{\n" +
-            "\tprivate static Dictionary<Type, Type> ViewsByCompTypes = new();\n" +
-            "\tpublic static Type GetViewTypeByCompType(Type compType) => ViewsByCompTypes[compType];\n\n" +
+            "\tprivate static Dictionary<Type, Type> _viewsByCompTypes = new();\n" +
+            "\tpublic static Type GetViewTypeByCompType(Type compType) => _viewsByCompTypes[compType];\n" +
+            "\tpublic static bool IsTypeHaveView(Type compType) => _viewsByCompTypes.ContainsKey(compType);\n\n" +
             "\tpublic static void Register()\n" +
             "\t{\n" +
             "\t\tint id;\n" +
@@ -54,7 +55,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
             var registrationBody = "";
             foreach (var type in IntegrationHelper.EcsComponentTypes)
-                registrationBody += "\t\tViewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\n" +
+                registrationBody += "\t\t_viewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\n" +
                     "\t\tid = ComponentMeta<" + type.Name + ">.Id;\n";
             var registratorCode = ViewRegistratorTemplate.Replace("<RegisterHere>", registrationBody);
             using (StreamWriter writer = new StreamWriter(ViewsPath + "ViewRegistrator.cs"))

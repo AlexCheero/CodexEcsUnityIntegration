@@ -205,6 +205,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             _world.GetTypesForId(_id, _typesBuffer);
             foreach (var type in _typesBuffer)
             {
+                if (!ViewRegistrator.IsTypeHaveView(type))
+                    continue;
+
                 var isComponent = typeof(IComponent).IsAssignableFrom(type);
                 var isTag = typeof(ITag).IsAssignableFrom(type);
                 if (!isComponent && !isTag)
