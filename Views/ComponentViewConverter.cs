@@ -37,8 +37,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         private static readonly string ViewsPath = "Assets/Scripts/Monobehaviours/ComponentViews/";
 
-        [MenuItem("ECS/Generate component views", false, -1)]
-        private static void GenerateComponentViews()
+        [MenuItem("CodeGen/ECS/Generate component views", false, -1)]
+        public static void GenerateComponentViews()
         {
             var dir = new DirectoryInfo(ViewsPath);
             foreach (FileInfo file in dir.GetFiles())
