@@ -74,6 +74,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             specificType.TypeInitializer?.Invoke(null, null);
         }
 
+        public int InitAsEntityWithChildren(EcsWorld world)
+        {
+            foreach (var view in GetComponentsInChildren<EntityView>())
+                view.InitAsEntity(world);
+            return Id;
+        }
+
         public int InitAsEntity(EcsWorld world)
         {
             _world = world;
