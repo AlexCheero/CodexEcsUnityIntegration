@@ -56,7 +56,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 var compType = component.GetType();
                 do
                 {
-                    if (!ComponentTypeToIdMapping.Mapping.ContainsKey(compType))
+                    if (!ComponentMapping.TypeToId.ContainsKey(compType))
                         CallStaticCtorForComponentMeta(compType);
                     list.Add(Tuple.Create(compType, component));
                     compType = compType.BaseType;
