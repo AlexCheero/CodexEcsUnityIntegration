@@ -105,6 +105,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public bool Have<T>() => _world.Have<T>(_id);
         public void Add<T>(T component = default) => _world.Add(_id, component);
+        public void TryAdd<T>() => _world.TryAdd<T>(_id);
         public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
         public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(_id);
         public void Remove<T>() => _world.Remove<T>(_id);
