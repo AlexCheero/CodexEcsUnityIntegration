@@ -10,6 +10,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     public class EntityView : MonoBehaviour
     {
+        [SerializeField]
+        private bool _forceInit;
+        public bool ForceInit => _forceInit;
+
         private List<Tuple<Type, Component>> _componentsBuffer;
 
         static EntityView()

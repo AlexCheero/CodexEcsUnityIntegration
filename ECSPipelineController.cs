@@ -31,8 +31,11 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 pipeline.Switch(false);
             }
 
-            foreach (var view in FindObjectsOfType<EntityView>())
-                view.InitAsEntity(_world);
+            foreach (var view in FindObjectsOfType<EntityView>(true))
+            {
+                if (view.gameObject.activeSelf || view.ForceInit)
+                    view.InitAsEntity(_world);
+            }
 
             SwitchPipeline(0);
         }
