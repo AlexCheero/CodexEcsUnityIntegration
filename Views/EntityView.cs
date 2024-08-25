@@ -23,14 +23,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         private BaseComponentView[] _componentViews;
         private EcsWorld _world;
-        private Entity _entity;
-        private int _id;
+        private Entity _entity = EntityExtension.NullEntity;
+        private int _id = -1;
 
         public Entity Entity { get => _entity; private set => _entity = value; }
         public EcsWorld World { get => _world; private set => _world = value; }
         public int Id { get => _id; private set => _id = value; }
         public int Version { get => _entity.GetVersion(); }
-        public bool IsValid { get => _world != null && _world.IsEntityValid(_entity); }
+        public bool IsValid { get => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity); }
 
         //TODO: maybe move to void OnValidate()
         void Awake() => Init();
@@ -115,7 +115,12 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public void Remove<T>() => _world.Remove<T>(_id);
         public void TryRemove<T>() => _world.TryRemove<T>(_id);
 
-        public void DeleteFromWorld() => _world.Delete(_id);
+        public void DeleteFromWorld()
+        {
+            _world.Delete(_id);
+            _id = -1;
+            _entity = EntityExtension.NullEntity;
+        }
 
         void OnDestroy()
         {
@@ -125,6 +130,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         void OnCollisionEnter(Collision collision)
         {
+            if (!IsValid)
+            {
+#if DEBUG
+                Debug.Log("OnCollisionEnter invalid entity");
+#endif
+                return;
+            }
+            
             var collisionComponent = new CollisionComponent
             {
                 collider = collision.collider,
@@ -144,6 +157,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         private void OnTriggerEnter(Collider other)
         {
+            if (!IsValid)
+            {
+#if DEBUG
+                Debug.Log("OnTriggerEnter invalid entity");
+#endif
+                return;
+            }
+            
             if (Have<TriggerEnterComponent>())
             {
                 if (Have<OverrideTriggerEnter>())
