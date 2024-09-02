@@ -19,7 +19,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public abstract void AddToWorld(EcsWorld world, int id);
 
-#if UNITY_EDITOR
+#if CODEX_ECS_EDITOR
         public abstract Type GetEcsComponentType();
         public abstract void UpdateFromWorld(EcsWorld world, int id);
 #endif
@@ -34,7 +34,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             world.Add(id, Component);
         }
 
-#if UNITY_EDITOR
+#if CODEX_ECS_EDITOR
         public override void UpdateFromWorld(EcsWorld world, int id)
         {
             var comp = world.GetComponent<T>(id);

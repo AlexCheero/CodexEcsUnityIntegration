@@ -41,7 +41,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             if (_componentsBuffer == null || _componentsBuffer.Count == 0)
                 _componentsBuffer = GatherUnityComponents();
 
-#if UNITY_EDITOR
+#if CODEX_ECS_EDITOR
             _viewsByComponentType ??= _componentViews.ToDictionary(view => view.GetEcsComponentType(), view => view);
             _typesToCheck ??= new HashSet<Type>(_viewsByComponentType.Keys);
             _typesBuffer ??= new HashSet<Type>(_viewsByComponentType.Keys);
@@ -189,7 +189,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             }
         }
 
-#if UNITY_EDITOR
+#if CODEX_ECS_EDITOR
         private bool _validationGuard;//hack to not loose values on inspector update in late update
         public void OnComponentValidate<T>(BaseComponentView view, T component)
         {
