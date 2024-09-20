@@ -231,8 +231,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 if (switches[i])
                     systems[i].Tick(_world);
             }
-
-            _world.CallReactiveSystems();
         }
 
         private void CreateSystemsByNames(ESystemCategory category, object[] systemCtorParams)
