@@ -29,8 +29,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public Entity Entity { get => _entity; private set => _entity = value; }
         public EcsWorld World { get => _world; private set => _world = value; }
         public int Id { get => _id; private set => _id = value; }
-        public int Version { get => _entity.GetVersion(); }
-        public bool IsValid { get => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity); }
+        public int Version => _entity.GetVersion();
+        public bool IsValid => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity);
 
         //TODO: maybe move to void OnValidate()
         void Awake() => Init();

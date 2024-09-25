@@ -5,11 +5,11 @@ using CodexFramework.CodexEcsUnityIntegration;
 [System(ESystemCategory.Update)]
 public class #SCRIPTNAME# : EcsSystem
 {
-    private readonly int _filterId;
+    private readonly EcsFilter _filter;
 
     public #SCRIPTNAME#(EcsWorld world)
     {
-        //_filterId = world.RegisterFilter(
+        //_filter = world.RegisterFilter(
         //    //includes
         //    new BitMask(Id<Comp1>(), Id<Comp2>()),
         //    //excludes
@@ -19,7 +19,7 @@ public class #SCRIPTNAME# : EcsSystem
 
     public override void Tick(EcsWorld world)
     {
-        foreach (var id in world.Enumerate(_filterId))
+        foreach (var id in _filter)
         {
             //world.GetComponent<Comp1>(id)
             //world.Have<Comp4>(id)
