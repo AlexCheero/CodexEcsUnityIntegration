@@ -3,7 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
@@ -13,12 +15,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
     {
         private EcsWorld _world;
 
-        private struct SystemData
-        {
-            public EcsSystem System;
-            public bool Switch;
-        }
-
         private Dictionary<ESystemCategory, Dictionary<Type, int>> _systemToIndexMapping;
         private Dictionary<ESystemCategory, EcsSystem[]> _systems;
 
@@ -27,42 +23,42 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
         [SerializeField]
-        public string[] _initSystemTypeNames = new string[0];
+        public MonoScript[] _initSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _updateSystemTypeNames = new string[0];
+        public MonoScript[] _updateSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _lateUpdateSystemTypeNames = new string[0];
+        public MonoScript[] _lateUpdateSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _fixedUpdateSystemTypeNames = new string[0];
+        public MonoScript[] _fixedUpdateSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _lateFixedUpdateSystemTypeNames = new string[0];
+        public MonoScript[] _lateFixedUpdateSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _enableSystemTypeNames = new string[0];
+        public MonoScript[] _enableSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _disableSystemTypeNames = new string[0];
+        public MonoScript[] _disableSystemScripts = Array.Empty<MonoScript>();
         [SerializeField]
-        public string[] _reactiveSystemTypeNames = new string[0];
+        public MonoScript[] _reactiveSystemScripts = Array.Empty<MonoScript>();
 
-        private ref string[] GetSystemTypeNamesByCategory(ESystemCategory category)
+        private ref MonoScript[] GetSystemScriptsByCategory(ESystemCategory category)
         {
             switch (category)
             {
                 case ESystemCategory.Init:
-                    return ref _initSystemTypeNames;
+                    return ref _initSystemScripts;
                 case ESystemCategory.Update:
-                    return ref _updateSystemTypeNames;
+                    return ref _updateSystemScripts;
                 case ESystemCategory.LateUpdate:
-                    return ref _lateUpdateSystemTypeNames;
+                    return ref _lateUpdateSystemScripts;
                 case ESystemCategory.FixedUpdate:
-                    return ref _fixedUpdateSystemTypeNames;
+                    return ref _fixedUpdateSystemScripts;
                 case ESystemCategory.LateFixedUpdate:
-                    return ref _lateFixedUpdateSystemTypeNames;
+                    return ref _lateFixedUpdateSystemScripts;
                 case ESystemCategory.OnEnable:
-                    return ref _enableSystemTypeNames;
+                    return ref _enableSystemScripts;
                 case ESystemCategory.OnDisable:
-                    return ref _disableSystemTypeNames;
+                    return ref _disableSystemScripts;
                 case ESystemCategory.Reactive:
-                    return ref _reactiveSystemTypeNames;
+                    return ref _reactiveSystemScripts;
                 default:
                     throw new Exception("category not implemented: " + category.ToString());
             }
@@ -235,18 +231,18 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         private void CreateSystemsByNames(ESystemCategory category, object[] systemCtorParams)
         {
-            var names = GetSystemTypeNamesByCategory(category);
-            if (names == null || names.Length < 1)
+            var scripts = GetSystemScriptsByCategory(category);
+            if (scripts == null || scripts.Length < 1)
                 return;
 
-            var systems = new EcsSystem[names.Length];
+            var systems = new EcsSystem[scripts.Length];
 
             _systemToIndexMapping[category] = new();
-            for (int i = 0; i < names.Length; i++)
+            for (int i = 0; i < scripts.Length; i++)
             {
-                var systemType = IntegrationHelper.SystemTypes[names[i]];
+                var systemType = scripts[i].GetClass();
                 if (systemType == null)
-                    throw new Exception("can't find system type " + names[i]);
+                    throw new Exception("can't find system type " + scripts[i]);
                 _systemToIndexMapping[category][systemType] = i;
                 systems[i] = (EcsSystem)Activator.CreateInstance(systemType, systemCtorParams);
             }
@@ -262,67 +258,63 @@ namespace CodexFramework.CodexEcsUnityIntegration
         }
 
 #if UNITY_EDITOR
-        public bool AddSystem(string systemName, ESystemCategory systemCategory)
+        public bool AddSystem(MonoScript script, ESystemCategory systemCategory)
         {
-            ref var systemNames = ref GetSystemTypeNamesByCategory(systemCategory);
+            ref var scripts = ref GetSystemScriptsByCategory(systemCategory);
             ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
-            return AddSystem(systemName, ref systemNames, ref switches);
+            return AddSystem(script, ref scripts, ref switches);
         }
 
-        private bool AddSystem(string systemName, ref string[] systems, ref bool[] switches)
+        private bool AddSystem(MonoScript newScript, ref MonoScript[] scripts, ref bool[] switches)
         {
-            foreach (var sysName in systems)
-                if (systemName == sysName) return false;
+            foreach (var script in scripts)
+                if (newScript == script) return false;
 
-            Array.Resize(ref systems, systems.Length + 1);
-            systems[systems.Length - 1] = systemName;
+            Array.Resize(ref scripts, scripts.Length + 1);
+            scripts[^1] = newScript;
 
             Array.Resize(ref switches, switches.Length + 1);
-            switches[switches.Length - 1] = true; ;
+            switches[^1] = true; ;
 
             return true;
         }
 
         public void RemoveMetaAt(ESystemCategory systemCategory, int idx)
         {
-            ref var systemNames = ref GetSystemTypeNamesByCategory(systemCategory);
+            ref var scripts = ref GetSystemScriptsByCategory(systemCategory);
             ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
-            RemoveMetaAt(idx, ref systemNames, ref switches);
+            RemoveMetaAt(idx, ref scripts, ref switches);
         }
 
-        private void RemoveMetaAt(int idx, ref string[] systems, ref bool[] switches)
+        private void RemoveMetaAt(int idx, ref MonoScript[] scripts, ref bool[] switches)
         {
-            var newLength = systems.Length - 1;
+            var newLength = scripts.Length - 1;
             for (int i = idx; i < newLength; i++)
             {
-                systems[i] = systems[i + 1];
+                scripts[i] = scripts[i + 1];
                 switches[i] = switches[i + 1];
             }
-            Array.Resize(ref systems, newLength);
+            Array.Resize(ref scripts, newLength);
         }
 
         public bool Move(ESystemCategory systemCategory, int idx, bool up)
         {
-            var systemNames = GetSystemTypeNamesByCategory(systemCategory);
+            var scripts = GetSystemScriptsByCategory(systemCategory);
             var switches = GetSystemSwitchesByCategory(systemCategory);
-            return Move(idx, up, systemNames, switches);
+            return Move(idx, up, scripts, switches);
         }
 
-        private bool Move(int idx, bool up, string[] systems, bool[] switches)
+        private bool Move(int idx, bool up, MonoScript[] scripts, bool[] switches)
         {
             //var newIdx = up ? idx + 1 : idx - 1;
             //TODO: no idea why it works like that, but have to invert indices to move systems properly
             var newIdx = up ? idx - 1 : idx + 1;
-            if (newIdx < 0 || newIdx > systems.Length - 1)
+            if (newIdx < 0 || newIdx > scripts.Length - 1)
                 return false;
 
-            var tempName = systems[newIdx];
-            systems[newIdx] = systems[idx];
-            systems[idx] = tempName;
+            (scripts[newIdx], scripts[idx]) = (scripts[idx], scripts[newIdx]);
 
-            var tempSwitch = switches[newIdx];
-            switches[newIdx] = switches[idx];
-            switches[idx] = tempSwitch;
+            (switches[newIdx], switches[idx]) = (switches[idx], switches[newIdx]);
 
             return true;
         }

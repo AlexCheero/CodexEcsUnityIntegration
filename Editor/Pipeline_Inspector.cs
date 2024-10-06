@@ -22,16 +22,16 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         private const string DisableSystemsLabel = "On Disable Systems";
         private const string ReactiveSystemsLabel = "On Add Reactive Systems";
 
-        private static List<string> initSystemTypeNames;
-        private static List<string> updateSystemTypeNames;
-        private static List<string> lateUpdateSystemTypeNames;
-        private static List<string> fixedUpdateSystemTypeNames;
-        private static List<string> lateFixedUpdateSystemTypeNames;
-        private static List<string> enableSystemTypeNames;
-        private static List<string> disableSystemTypeNames;
-        private static List<string> reactiveSystemTypeNames;
+        private static List<MonoScript> initSystems;
+        private static List<MonoScript> updateSystems;
+        private static List<MonoScript> lateUpdateSystems;
+        private static List<MonoScript> fixedUpdateSystems;
+        private static List<MonoScript> lateFixedUpdateSystems;
+        private static List<MonoScript> enableSystems;
+        private static List<MonoScript> disableSystems;
+        private static List<MonoScript> reactiveSystems;
 
-        private Dictionary<string, MonoScript> systemScripts;
+        private static List<MonoScript> systemScripts;
 
         private bool _addListExpanded;
         private string _addSearch;
@@ -48,57 +48,72 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             }
         }
 
-        public override VisualElement CreateInspectorGUI()
+        private void Initialize()
         {
             var systems = Resources.FindObjectsOfTypeAll(typeof(MonoScript)).Where(obj =>
             {
                 var monoScript = obj as MonoScript;
                 return monoScript != null && typeof(EcsSystem).IsAssignableFrom(monoScript.GetClass());
             });
-            systemScripts = systems.ToDictionary(obj => obj.name, obj => obj as MonoScript);
+            systemScripts = new();
+            foreach (var systemObj in systems)
+                systemScripts.Add(systemObj as MonoScript);
+            
+            initSystems = new();
+            updateSystems = new();
+            lateUpdateSystems = new();
+            fixedUpdateSystems = new();
+            lateFixedUpdateSystems = new();
+            enableSystems = new();
+            disableSystems = new();
+            reactiveSystems = new();
 
-            return base.CreateInspectorGUI();
-        }
-
-        static Pipeline_Inspector()
-        {
-            initSystemTypeNames = new();
-            updateSystemTypeNames = new();
-            lateUpdateSystemTypeNames = new();
-            fixedUpdateSystemTypeNames = new();
-            lateFixedUpdateSystemTypeNames = new();
-            enableSystemTypeNames = new();
-            disableSystemTypeNames = new();
-            reactiveSystemTypeNames = new();
-
-            foreach (var t in Assembly.GetAssembly(typeof(EcsSystem)).GetTypes())
+            foreach (var ms in systemScripts)
             {
+                var t = ms.GetClass();
                 if (!t.IsSubclassOf(typeof(EcsSystem)))
                     continue;
                 var attribute = t.GetCustomAttribute<SystemAttribute>();
                 var categories = attribute != null ? attribute.Categories : new[] { ESystemCategory.Update };
                 foreach (var category in categories)
                 {
-                    if (category == ESystemCategory.Init)
-                        initSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.Update)
-                        updateSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.LateUpdate)
-                        lateUpdateSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.FixedUpdate)
-                        fixedUpdateSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.LateFixedUpdate)
-                        lateFixedUpdateSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.OnEnable)
-                        enableSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.OnDisable)
-                        disableSystemTypeNames.Add(t.FullName);
-                    if (category == ESystemCategory.Reactive)
-                        reactiveSystemTypeNames.Add(t.FullName);
+                    switch (category)
+                    {
+                        case ESystemCategory.Init:
+                            initSystems.Add(ms);
+                            break;
+                        case ESystemCategory.Update:
+                            updateSystems.Add(ms);
+                            break;
+                        case ESystemCategory.LateUpdate:
+                            lateUpdateSystems.Add(ms);
+                            break;
+                        case ESystemCategory.FixedUpdate:
+                            fixedUpdateSystems.Add(ms);
+                            break;
+                        case ESystemCategory.LateFixedUpdate:
+                            lateFixedUpdateSystems.Add(ms);
+                            break;
+                        case ESystemCategory.OnEnable:
+                            enableSystems.Add(ms);
+                            break;
+                        case ESystemCategory.OnDisable:
+                            disableSystems.Add(ms);
+                            break;
+                        case ESystemCategory.Reactive:
+                            reactiveSystems.Add(ms);
+                            break;
+                    }
                 }
             }
         }
 
+        public override VisualElement CreateInspectorGUI()
+        {
+            Initialize();
+            return base.CreateInspectorGUI();
+        }
+        
         public override void OnInspectorGUI()
         {
             var listText = _addListExpanded ? "Shrink systems list" : "Expand systems list";
@@ -108,22 +123,22 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             {
                 _addSearch = EditorGUILayout.TextField(_addSearch);
                 EditorGUILayout.BeginVertical();
-                DrawAddList(InitSystemsLabel, initSystemTypeNames, Pipeline._initSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.Init));
-                DrawAddList(UpdateSystemsLabel, updateSystemTypeNames, Pipeline._updateSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.Update));
-                DrawAddList(LateUpdateSystemsLabel, lateUpdateSystemTypeNames, Pipeline._lateUpdateSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.LateUpdate));
-                DrawAddList(FixedSystemsLabel, fixedUpdateSystemTypeNames, Pipeline._fixedUpdateSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.FixedUpdate));
-                DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystemTypeNames, Pipeline._lateFixedUpdateSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.LateFixedUpdate));
-                DrawAddList(EnableSystemsLabel, enableSystemTypeNames, Pipeline._enableSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.OnEnable));
-                DrawAddList(DisableSystemsLabel, disableSystemTypeNames, Pipeline._disableSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.OnDisable));
-                DrawAddList(ReactiveSystemsLabel, reactiveSystemTypeNames, Pipeline._reactiveSystemTypeNames,
-                    (name) => OnAddSystem(name, ESystemCategory.Reactive));
+                DrawAddList(InitSystemsLabel, initSystems, Pipeline._initSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.Init));
+                DrawAddList(UpdateSystemsLabel, updateSystems, Pipeline._updateSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.Update));
+                DrawAddList(LateUpdateSystemsLabel, lateUpdateSystems, Pipeline._lateUpdateSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.LateUpdate));
+                DrawAddList(FixedSystemsLabel, fixedUpdateSystems, Pipeline._fixedUpdateSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.FixedUpdate));
+                DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystems, Pipeline._lateFixedUpdateSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.LateFixedUpdate));
+                DrawAddList(EnableSystemsLabel, enableSystems, Pipeline._enableSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.OnEnable));
+                DrawAddList(DisableSystemsLabel, disableSystems, Pipeline._disableSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.OnDisable));
+                DrawAddList(ReactiveSystemsLabel, reactiveSystems, Pipeline._reactiveSystemScripts,
+                    (script) => OnAddSystem(script, ESystemCategory.Reactive));
                 EditorGUILayout.EndVertical();
             }
 
@@ -138,7 +153,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             DrawSystemCategory(ESystemCategory.Reactive);
         }
 
-        private static bool ShouldSkipItem(string item, string[] skippedItems)
+        private static bool ShouldSkipItem(MonoScript item, MonoScript[] skippedItems)
         {
             foreach (var skippedItem in skippedItems)
             {
@@ -148,88 +163,87 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             return false;
         }
 
-        public void DrawAddList(string label, List<string> systems, string[] except, Action<string> onAdd)
+        public void DrawAddList(string label, List<MonoScript> systems, MonoScript[] except, Action<MonoScript> onAdd)
         {
             EditorGUILayout.LabelField(label + ':');
             GUILayout.Space(10);
-            foreach (var systemName in systems)
+            foreach (var systemScript in systems)
             {
-                if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || ShouldSkipItem(systemName, except))
+                var systemName = systemScript.GetClass().FullName;
+                if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || ShouldSkipItem(systemScript, except))
                     continue;
 
                 EditorGUILayout.BeginHorizontal();
 
                 //TODO: add lines between components for readability
                 //      or remove "+" button and make buttons with component names on it
-                EditorGUILayout.ObjectField(GetSystemScriptByName(systemName), typeof(MonoScript), false);
+                EditorGUILayout.ObjectField(systemScript, typeof(MonoScript), false);
                 bool tryAdd = GUILayout.Button(new GUIContent("+"), GUILayout.ExpandWidth(false));
                 if (tryAdd)
-                    onAdd(systemName);
+                    onAdd(systemScript);
 
                 EditorGUILayout.EndHorizontal();
             }
             GUILayout.Space(10);
         }
 
-        private MonoScript GetSystemScriptByName(string name) => systemScripts.ContainsKey(name) ? systemScripts[name] : null;
-
         private void DrawSystemCategory(ESystemCategory category)
         {
-            string[] systems;
+            MonoScript[] scripts;
             bool[] switches;
             //TODO: this switch duplicated in ECSPipeline, refactor
             switch (category)
             {
                 case ESystemCategory.Init:
-                    systems = Pipeline._initSystemTypeNames;
+                    scripts = Pipeline._initSystemScripts;
                     switches = Pipeline._initSwitches;
                     break;
                 case ESystemCategory.Update:
-                    systems = Pipeline._updateSystemTypeNames;
+                    scripts = Pipeline._updateSystemScripts;
                     switches = Pipeline._updateSwitches;
                     break;
                 case ESystemCategory.LateUpdate:
-                    systems = Pipeline._lateUpdateSystemTypeNames;
+                    scripts = Pipeline._lateUpdateSystemScripts;
                     switches = Pipeline._lateUpdateSwitches;
                     break;
                 case ESystemCategory.FixedUpdate:
-                    systems = Pipeline._fixedUpdateSystemTypeNames;
+                    scripts = Pipeline._fixedUpdateSystemScripts;
                     switches = Pipeline._fixedUpdateSwitches;
                     break;
                 case ESystemCategory.LateFixedUpdate:
-                    systems = Pipeline._lateFixedUpdateSystemTypeNames;
+                    scripts = Pipeline._lateFixedUpdateSystemScripts;
                     switches = Pipeline._lateFixedUpdateSwitches;
                     break;
                 case ESystemCategory.OnEnable:
-                    systems = Pipeline._enableSystemTypeNames;
+                    scripts = Pipeline._enableSystemScripts;
                     switches = Pipeline._enableSwitches;
                     break;
                 case ESystemCategory.OnDisable:
-                    systems = Pipeline._disableSystemTypeNames;
+                    scripts = Pipeline._disableSystemScripts;
                     switches = Pipeline._disableSwitches;
                     break;
                 case ESystemCategory.Reactive:
-                    systems = Pipeline._reactiveSystemTypeNames;
+                    scripts = Pipeline._reactiveSystemScripts;
                     switches = Pipeline._reactiveSwitches;
                     break;
                 default:
                     return;
             }
 
-            if (systems.Length == 0)
+            if (scripts.Length == 0)
                 return;
 
             GUILayout.Space(10);
             EditorGUILayout.LabelField(category.ToString());
 
-            for (int i = 0; i < systems.Length; i++)
+            for (int i = 0; i < scripts.Length; i++)
             {
-                if (!IntegrationHelper.IsSearchMatch(_addedSearch, systems[i]))
+                if (!IntegrationHelper.IsSearchMatch(_addedSearch, scripts[i].GetClass().FullName))
                     continue;
 
                 EditorGUILayout.BeginHorizontal();
 
-                EditorGUILayout.ObjectField(GetSystemScriptByName(systems[i]), typeof(MonoScript), false);
+                EditorGUILayout.ObjectField(scripts[i], typeof(MonoScript), false);
                 bool newState = EditorGUILayout.Toggle(switches[i]);
                 if (newState != switches[i])
                     EditorUtility.SetDirty(target);
@@ -256,12 +270,12 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             }
         }
 
-        private void OnAddSystem(string systemName, ESystemCategory systemCategory)
+        private void OnAddSystem(MonoScript script, ESystemCategory systemCategory)
         {
             //_addListExpanded = false;
 
             var pipeline = Pipeline;
-            if (pipeline.AddSystem(systemName, systemCategory))
+            if (pipeline.AddSystem(script, systemCategory))
                 EditorUtility.SetDirty(target);
         }
     }
