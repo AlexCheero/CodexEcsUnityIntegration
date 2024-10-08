@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -36,6 +37,15 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         private bool _addListExpanded;
         private string _addSearch;
         private string _addedSearch;
+        
+        private ReorderableList _initList;
+        private ReorderableList _updateList;
+        private ReorderableList _lateUpdateList;
+        private ReorderableList _fixedUpdateList;
+        private ReorderableList _lateFixedUpdateList;
+        private ReorderableList _enableList;
+        private ReorderableList _disableList;
+        private ReorderableList _reactiveList;
 
         private ECSPipeline _pipeline;
         private ECSPipeline Pipeline
@@ -46,6 +56,53 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                     _pipeline = (ECSPipeline)target;
                 return _pipeline;
             }
+        }
+
+        private ReorderableList InitializeSystemList(string propertyName)
+        {
+            //TODO: cache properties
+            var arrayProperty = serializedObject.FindProperty(propertyName);
+            // Initialize the reorderable list
+            var reorderableList = new ReorderableList(serializedObject,
+                arrayProperty,
+                true, false, true, true);
+
+            // Set up drawing logic for each element
+            reorderableList.drawElementCallback = (rect, index, _, _) =>
+            {
+                var element = reorderableList.serializedProperty.GetArrayElementAtIndex(index);
+                var scriptProp = element.FindPropertyRelative("Script");
+                var activeProp = element.FindPropertyRelative("Active");
+
+                DrawElement(rect, scriptProp, activeProp, arrayProperty, index);
+            };
+
+            reorderableList.elementHeightCallback = _ => EditorGUIUtility.singleLineHeight;
+
+            // Set up element filtering logic (we'll filter during GUI rendering)
+            reorderableList.onCanAddCallback = _ => true;
+            reorderableList.onCanRemoveCallback = _ => true;
+            
+            //TODO: on system's position changed in runtime doesn't change the position of runtime system instance
+
+            return reorderableList;
+        }
+        
+        private int _removedElement = -1;
+        private void DrawElement(Rect rect, SerializedProperty scriptProp, SerializedProperty activeProp, SerializedProperty arrayProperty, int index)
+        {
+            var lineHeight = EditorGUIUtility.singleLineHeight;
+            const float gap = 5.0f;
+        
+            //TODO: fix indents
+            EditorGUI.ObjectField(new Rect(rect.x, rect.y, rect.width - lineHeight - 30, EditorGUIUtility.singleLineHeight),
+                scriptProp, GUIContent.none);
+        
+            EditorGUI.PropertyField(new Rect(rect.x + rect.width - 2*lineHeight, rect.y, 30, EditorGUIUtility.singleLineHeight),
+                activeProp, GUIContent.none);
+
+            if (GUI.Button(new Rect(rect.x + rect.width - lineHeight, rect.y, lineHeight, lineHeight), "-"))
+                _removedElement = index;
         }
 
         private void Initialize()
@@ -106,6 +163,15 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                     }
                 }
             }
+
+            _initList = InitializeSystemList("_initSystemScripts");
+            _updateList = InitializeSystemList("_updateSystemScripts");
+            _lateUpdateList = InitializeSystemList("_lateUpdateSystemScripts");
+            _fixedUpdateList = InitializeSystemList("_fixedUpdateSystemScripts");
+            _lateFixedUpdateList = InitializeSystemList("_lateFixedUpdateSystemScripts");
+            _enableList = InitializeSystemList("_enableSystemScripts");
+            _disableList = InitializeSystemList("_disableSystemScripts");
+            _reactiveList = InitializeSystemList("_reactiveSystemScripts");
         }
 
         public override VisualElement CreateInspectorGUI()
@@ -130,40 +196,41 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 DrawAddList(LateUpdateSystemsLabel, lateUpdateSystems, Pipeline._lateUpdateSystemScripts,
                     (script) => OnAddSystem(script, ESystemCategory.LateUpdate));
                 DrawAddList(FixedSystemsLabel, fixedUpdateSystems, Pipeline._fixedUpdateSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.FixedUpdate));
+                    script => OnAddSystem(script, ESystemCategory.FixedUpdate));
                 DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystems, Pipeline._lateFixedUpdateSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.LateFixedUpdate));
+                    script => OnAddSystem(script, ESystemCategory.LateFixedUpdate));
                 DrawAddList(EnableSystemsLabel, enableSystems, Pipeline._enableSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.OnEnable));
+                    script => OnAddSystem(script, ESystemCategory.OnEnable));
                 DrawAddList(DisableSystemsLabel, disableSystems, Pipeline._disableSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.OnDisable));
+                    script => OnAddSystem(script, ESystemCategory.OnDisable));
                 DrawAddList(ReactiveSystemsLabel, reactiveSystems, Pipeline._reactiveSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.Reactive));
+                    script => OnAddSystem(script, ESystemCategory.Reactive));
                 EditorGUILayout.EndVertical();
             }
 
             _addedSearch = EditorGUILayout.TextField(_addedSearch);
-            DrawSystemCategory(ESystemCategory.Init);
-            DrawSystemCategory(ESystemCategory.Update);
-            DrawSystemCategory(ESystemCategory.LateUpdate);
-            DrawSystemCategory(ESystemCategory.FixedUpdate);
-            DrawSystemCategory(ESystemCategory.LateFixedUpdate);
-            DrawSystemCategory(ESystemCategory.OnEnable);
-            DrawSystemCategory(ESystemCategory.OnDisable);
-            DrawSystemCategory(ESystemCategory.Reactive);
+            //TODO: fold systems lists
+            DrawSystemCategory(_initList, "_initSystemScripts");
+            DrawSystemCategory(_updateList, "_updateSystemScripts");
+            DrawSystemCategory(_lateUpdateList, "_lateUpdateSystemScripts");
+            DrawSystemCategory(_fixedUpdateList, "_fixedUpdateSystemScripts");
+            DrawSystemCategory(_lateFixedUpdateList, "_lateFixedUpdateSystemScripts");
+            DrawSystemCategory(_enableList, "_enableSystemScripts");
+            DrawSystemCategory(_disableList, "_disableSystemScripts");
+            DrawSystemCategory(_reactiveList, "_reactiveSystemScripts");
         }
 
-        private static bool ShouldSkipItem(MonoScript item, MonoScript[] skippedItems)
+        private static bool ShouldSkipItem(MonoScript item, ECSPipeline.SystemEntry[] skippedItems)
         {
             foreach (var skippedItem in skippedItems)
             {
-                if (item == skippedItem)
+                if (item == skippedItem.Script)
                     return true;
             }
             return false;
         }
 
-        public void DrawAddList(string label, List<MonoScript> systems, MonoScript[] except, Action<MonoScript> onAdd)
+        public void DrawAddList(string label, List<MonoScript> systems, ECSPipeline.SystemEntry[] except, Action<MonoScript> onAdd)
         {
             EditorGUILayout.LabelField(label + ':');
             GUILayout.Space(10);
@@ -187,87 +254,50 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             GUILayout.Space(10);
         }
 
-        private void DrawSystemCategory(ESystemCategory category)
+        private void DrawSystemCategory(ReorderableList list, string propertyName)
         {
-            MonoScript[] scripts;
-            bool[] switches;
-            //TODO: this switch duplicated in ECSPipeline, refactor
-            switch (category)
-            {
-                case ESystemCategory.Init:
-                    scripts = Pipeline._initSystemScripts;
-                    switches = Pipeline._initSwitches;
-                    break;
-                case ESystemCategory.Update:
-                    scripts = Pipeline._updateSystemScripts;
-                    switches = Pipeline._updateSwitches;
-                    break;
-                case ESystemCategory.LateUpdate:
-                    scripts = Pipeline._lateUpdateSystemScripts;
-                    switches = Pipeline._lateUpdateSwitches;
-                    break;
-                case ESystemCategory.FixedUpdate:
-                    scripts = Pipeline._fixedUpdateSystemScripts;
-                    switches = Pipeline._fixedUpdateSwitches;
-                    break;
-                case ESystemCategory.LateFixedUpdate:
-                    scripts = Pipeline._lateFixedUpdateSystemScripts;
-                    switches = Pipeline._lateFixedUpdateSwitches;
-                    break;
-                case ESystemCategory.OnEnable:
-                    scripts = Pipeline._enableSystemScripts;
-                    switches = Pipeline._enableSwitches;
-                    break;
-                case ESystemCategory.OnDisable:
-                    scripts = Pipeline._disableSystemScripts;
-                    switches = Pipeline._disableSwitches;
-                    break;
-                case ESystemCategory.Reactive:
-                    scripts = Pipeline._reactiveSystemScripts;
-                    switches = Pipeline._reactiveSwitches;
-                    break;
-                default:
-                    return;
-            }
-
-            if (scripts.Length == 0)
+            if (list.count == 0)
                 return;
-
             GUILayout.Space(10);
-            EditorGUILayout.LabelField(category.ToString());
+            //TODO: use proper human-readable name and optimize
+            EditorGUILayout.LabelField(propertyName);
+            
+            // Update the serialized object
+            serializedObject.Update();
 
-            for (int i = 0; i < scripts.Length; i++)
+            SerializedProperty arrayProperty = serializedObject.FindProperty(propertyName);
+            
+            // Filter the list and draw only matching elements
+            if (!string.IsNullOrEmpty(_addedSearch))
             {
-                if (!IntegrationHelper.IsSearchMatch(_addedSearch, scripts[i].GetClass().FullName))
-                    continue;
-
-                EditorGUILayout.BeginHorizontal();
-
-                EditorGUILayout.ObjectField(scripts[i], typeof(MonoScript), false);
-                bool newState = EditorGUILayout.Toggle(switches[i]);
-                if (newState != switches[i])
-                    EditorUtility.SetDirty(target);
-                switches[i] = newState;
-                if (GUILayout.Button(new GUIContent("-"), GUILayout.ExpandWidth(false)))
+                for (int i = 0; i < arrayProperty.arraySize; i++)
                 {
-                    Pipeline.RemoveMetaAt(category, i);
-                    i--;
-                    EditorUtility.SetDirty(target);
-                }
+                    var element = arrayProperty.GetArrayElementAtIndex(i);
+                    var scriptProp = element.FindPropertyRelative("Script");
 
-                if (GUILayout.Button(new GUIContent("^"), GUILayout.ExpandWidth(false)))
-                {
-                    if (Pipeline.Move(category, i, true))
-                        EditorUtility.SetDirty(target);
+                    if (scriptProp.objectReferenceValue != null &&
+                        scriptProp.objectReferenceValue.name.Contains(_addedSearch, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
+                        var activeProp = element.FindPropertyRelative("Active");
+                        DrawElement(rect, scriptProp, activeProp, arrayProperty, i);
+                    }
                 }
-                if (GUILayout.Button(new GUIContent("v"), GUILayout.ExpandWidth(false)))
-                {
-                    if (Pipeline.Move(category, i, false))
-                        EditorUtility.SetDirty(target);
-                }
-
-                EditorGUILayout.EndHorizontal();
             }
+            else
+            {
+                // No filter, draw the full list
+                list.DoLayoutList();
+            }
+            
+            if (_removedElement > -1)
+            {
+                arrayProperty.DeleteArrayElementAtIndex(_removedElement);
+                _removedElement = -1;
+            }
+
+            // Apply changes back to the serialized object
+            serializedObject.ApplyModifiedProperties();
         }
 
         private void OnAddSystem(MonoScript script, ESystemCategory systemCategory)

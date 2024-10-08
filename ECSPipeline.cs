@@ -13,6 +13,13 @@ namespace CodexFramework.CodexEcsUnityIntegration
     //TODO: add fields to init EcsCacheSettings
     public class ECSPipeline : MonoBehaviour
     {
+        [Serializable]
+        public struct SystemEntry
+        {
+            public MonoScript Script;
+            public bool Active;
+        }
+        
         private EcsWorld _world;
 
         private Dictionary<ESystemCategory, Dictionary<Type, int>> _systemToIndexMapping;
@@ -23,23 +30,23 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         //TODO: same as for EntityView: define different access modifiers for UNITY_EDITOR
         [SerializeField]
-        public MonoScript[] _initSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _initSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _updateSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _updateSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _lateUpdateSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _lateUpdateSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _fixedUpdateSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _fixedUpdateSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _lateFixedUpdateSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _lateFixedUpdateSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _enableSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _enableSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _disableSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _disableSystemScripts = Array.Empty<SystemEntry>();
         [SerializeField]
-        public MonoScript[] _reactiveSystemScripts = Array.Empty<MonoScript>();
+        public SystemEntry[] _reactiveSystemScripts = Array.Empty<SystemEntry>();
 
-        private ref MonoScript[] GetSystemScriptsByCategory(ESystemCategory category)
+        private ref SystemEntry[] GetSystemScriptsByCategory(ESystemCategory category)
         {
             switch (category)
             {
@@ -59,48 +66,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     return ref _disableSystemScripts;
                 case ESystemCategory.Reactive:
                     return ref _reactiveSystemScripts;
-                default:
-                    throw new Exception("category not implemented: " + category.ToString());
-            }
-        }
-
-        [SerializeField]
-        public bool[] _initSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _updateSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _lateUpdateSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _fixedUpdateSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _lateFixedUpdateSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _enableSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _disableSwitches = new bool[0];
-        [SerializeField]
-        public bool[] _reactiveSwitches = new bool[0];
-
-        private ref bool[] GetSystemSwitchesByCategory(ESystemCategory category)
-        {
-            switch (category)
-            {
-                case ESystemCategory.Init:
-                    return ref _initSwitches;
-                case ESystemCategory.Update:
-                    return ref _updateSwitches;
-                case ESystemCategory.LateUpdate:
-                    return ref _lateUpdateSwitches;
-                case ESystemCategory.FixedUpdate:
-                    return ref _fixedUpdateSwitches;
-                case ESystemCategory.LateFixedUpdate:
-                    return ref _lateFixedUpdateSwitches;
-                case ESystemCategory.OnEnable:
-                    return ref _enableSwitches;
-                case ESystemCategory.OnDisable:
-                    return ref _disableSwitches;
-                case ESystemCategory.Reactive:
-                    return ref _reactiveSwitches;
                 default:
                     throw new Exception("category not implemented: " + category.ToString());
             }
@@ -136,13 +101,13 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         public void RunInitSystems()
         {
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.Init), _initSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.Update), _updateSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.LateUpdate), _lateUpdateSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.FixedUpdate), _fixedUpdateSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.LateFixedUpdate), _lateFixedUpdateSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.OnEnable), _enableSwitches);
-            InitSystemCategory(GetSystemByCategory(ESystemCategory.OnDisable), _disableSwitches);
+            TickSystemCategory(ESystemCategory.Init);
+            InitSystemCategory(ESystemCategory.Update);
+            InitSystemCategory(ESystemCategory.LateUpdate);
+            InitSystemCategory(ESystemCategory.FixedUpdate);
+            InitSystemCategory(ESystemCategory.LateFixedUpdate);
+            InitSystemCategory(ESystemCategory.OnEnable);
+            InitSystemCategory(ESystemCategory.OnDisable);
         }
 
         public bool IsPaused { get; private set; }
@@ -152,7 +117,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             IsPaused = false;
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.OnEnable), _enableSwitches);
+            TickSystemCategory(ESystemCategory.OnEnable);
             StartLateFixedUpdateSystemsIfAny();
         }
 
@@ -162,28 +127,28 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             IsPaused = true;
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.OnDisable), _disableSwitches, true);
+            TickSystemCategory(ESystemCategory.OnDisable, true);
             StopAllCoroutines();
         }
 
         void Update()
         {
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.Update), _updateSwitches);
+            TickSystemCategory(ESystemCategory.Update);
         }
 
         void LateUpdate()
         {
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.LateUpdate), _lateUpdateSwitches);
+            TickSystemCategory(ESystemCategory.LateUpdate);
         }
 
         void FixedUpdate()
         {
-            TickSystemCategory(GetSystemByCategory(ESystemCategory.FixedUpdate), _fixedUpdateSwitches);
+            TickSystemCategory(ESystemCategory.FixedUpdate);
         }
 
         private bool StartLateFixedUpdateSystemsIfAny()
         {
-            var shouldStart = _lateFixedUpdateSwitches.Length > 0 && _lateFixedUpdateSwitches.Any(systemSwitch => systemSwitch);
+            var shouldStart = _lateFixedUpdateSystemScripts.Length > 0 && _lateFixedUpdateSystemScripts.Any(system => system.Active);
             if (shouldStart)
                 StartCoroutine(LateFixedUpdate());
             return shouldStart;
@@ -198,25 +163,37 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 if (!gameObject.activeInHierarchy)
                     yield break;
 
-                TickSystemCategory(GetSystemByCategory(ESystemCategory.LateFixedUpdate), _lateFixedUpdateSwitches);
+                TickSystemCategory(ESystemCategory.LateFixedUpdate);
             }
         }
 
-        private void InitSystemCategory(EcsSystem[] systems, bool[] switches)
+        private void InitSystemCategory(ESystemCategory category)
         {
-            if (systems == null)
+            var systems = GetSystemByCategory(category);
+            var systemScripts = GetSystemScriptsByCategory(category);
+#if DEBUG
+            if (systems != null && systems.Length != systemScripts.Length)
+                throw new Exception("systems and switches desynch");
+#endif
+            if (systems == null || systems.Length == 0)
                 return;
 
             for (int i = 0; i < systems.Length; i++)
             {
-                if (switches[i])
+                if (systemScripts[i].Active)
                     systems[i].Init(_world);
             }
         }
 
-        private void TickSystemCategory(EcsSystem[] systems, bool[] switches, bool forceTick = false)
+        private void TickSystemCategory(ESystemCategory category, bool forceTick = false)
         {
-            if (systems == null)
+            var systems = GetSystemByCategory(category);
+            var systemScripts = GetSystemScriptsByCategory(category);
+#if DEBUG
+            if (systems != null && systems.Length != systemScripts.Length)
+                throw new Exception("systems and switches desynch");
+#endif
+            if (systems == null || systems.Length == 0)
                 return;
 
             for (int i = 0; i < systems.Length; i++)
@@ -224,7 +201,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 bool shouldReturn = !forceTick && IsPaused && systems[i].IsPausable;
                 if (shouldReturn)
                     continue;
-                if (switches[i])
+                if (systemScripts[i].Active)
                     systems[i].Tick(_world);
             }
         }
@@ -240,7 +217,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
             _systemToIndexMapping[category] = new();
             for (int i = 0; i < scripts.Length; i++)
             {
-                var systemType = scripts[i].GetClass();
+                var systemType = scripts[i].Script.GetClass();
                 if (systemType == null)
                     throw new Exception("can't find system type " + scripts[i]);
                 _systemToIndexMapping[category][systemType] = i;
@@ -253,28 +230,24 @@ namespace CodexFramework.CodexEcsUnityIntegration
         public void SwitchSystem<T>(ESystemCategory category, bool on) where T : EcsSystem
         {
             var systemIndex = _systemToIndexMapping[category][typeof(T)];
-            var switches = GetSystemSwitchesByCategory(category);
-            switches[systemIndex] = on;
+            var scripts = GetSystemScriptsByCategory(category);
+            scripts[systemIndex].Active = on;
         }
 
 #if UNITY_EDITOR
         public bool AddSystem(MonoScript script, ESystemCategory systemCategory)
         {
             ref var scripts = ref GetSystemScriptsByCategory(systemCategory);
-            ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
-            return AddSystem(script, ref scripts, ref switches);
+            return AddSystem(script, ref scripts);
         }
 
-        private bool AddSystem(MonoScript newScript, ref MonoScript[] scripts, ref bool[] switches)
+        private bool AddSystem(MonoScript newScript, ref SystemEntry[] systemEntries)
         {
-            foreach (var script in scripts)
-                if (newScript == script) return false;
+            foreach (var systemEntry in systemEntries)
+                if (newScript == systemEntry.Script) return false;
 
-            Array.Resize(ref scripts, scripts.Length + 1);
-            scripts[^1] = newScript;
-
-            Array.Resize(ref switches, switches.Length + 1);
-            switches[^1] = true; ;
+            Array.Resize(ref systemEntries, systemEntries.Length + 1);
+            systemEntries[^1] = new SystemEntry { Script = newScript, Active = true };
 
             return true;
         }
@@ -282,41 +255,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
         public void RemoveMetaAt(ESystemCategory systemCategory, int idx)
         {
             ref var scripts = ref GetSystemScriptsByCategory(systemCategory);
-            ref var switches = ref GetSystemSwitchesByCategory(systemCategory);
-            RemoveMetaAt(idx, ref scripts, ref switches);
+            RemoveMetaAt(idx, ref scripts);
         }
 
-        private void RemoveMetaAt(int idx, ref MonoScript[] scripts, ref bool[] switches)
+        private void RemoveMetaAt(int idx, ref SystemEntry[] scripts)
         {
             var newLength = scripts.Length - 1;
             for (int i = idx; i < newLength; i++)
-            {
                 scripts[i] = scripts[i + 1];
-                switches[i] = switches[i + 1];
-            }
             Array.Resize(ref scripts, newLength);
-        }
-
-        public bool Move(ESystemCategory systemCategory, int idx, bool up)
-        {
-            var scripts = GetSystemScriptsByCategory(systemCategory);
-            var switches = GetSystemSwitchesByCategory(systemCategory);
-            return Move(idx, up, scripts, switches);
-        }
-
-        private bool Move(int idx, bool up, MonoScript[] scripts, bool[] switches)
-        {
-            //var newIdx = up ? idx + 1 : idx - 1;
-            //TODO: no idea why it works like that, but have to invert indices to move systems properly
-            var newIdx = up ? idx - 1 : idx + 1;
-            if (newIdx < 0 || newIdx > scripts.Length - 1)
-                return false;
-
-            (scripts[newIdx], scripts[idx]) = (scripts[idx], scripts[newIdx]);
-
-            (switches[newIdx], switches[idx]) = (switches[idx], switches[newIdx]);
-
-            return true;
         }
 #endif
     }
