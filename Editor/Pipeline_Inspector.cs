@@ -58,10 +58,18 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             }
         }
 
+        private Dictionary<string, SerializedProperty> _serializedProperties;
+        private SerializedProperty GetCachedSerializedProperty(string propertyName)
+        {
+            _serializedProperties ??= new();
+            if (!_serializedProperties.ContainsKey(propertyName))
+                _serializedProperties[propertyName] = serializedObject.FindProperty(propertyName);
+            return _serializedProperties[propertyName];
+        }
+        
         private ReorderableList InitializeSystemList(string propertyName)
         {
-            //TODO: cache properties
-            var arrayProperty = serializedObject.FindProperty(propertyName);
+            var arrayProperty = GetCachedSerializedProperty(propertyName);
             // Initialize the reorderable list
             var reorderableList = new ReorderableList(serializedObject,
                 arrayProperty,
@@ -190,11 +198,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 _addSearch = EditorGUILayout.TextField(_addSearch);
                 EditorGUILayout.BeginVertical();
                 DrawAddList(InitSystemsLabel, initSystems, Pipeline._initSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.Init));
+                    script => OnAddSystem(script, ESystemCategory.Init));
                 DrawAddList(UpdateSystemsLabel, updateSystems, Pipeline._updateSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.Update));
+                    script => OnAddSystem(script, ESystemCategory.Update));
                 DrawAddList(LateUpdateSystemsLabel, lateUpdateSystems, Pipeline._lateUpdateSystemScripts,
-                    (script) => OnAddSystem(script, ESystemCategory.LateUpdate));
+                    script => OnAddSystem(script, ESystemCategory.LateUpdate));
                 DrawAddList(FixedSystemsLabel, fixedUpdateSystems, Pipeline._fixedUpdateSystemScripts,
                     script => OnAddSystem(script, ESystemCategory.FixedUpdate));
                 DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystems, Pipeline._lateFixedUpdateSystemScripts,
@@ -222,11 +230,12 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
 
         private static bool ShouldSkipItem(MonoScript item, ECSPipeline.SystemEntry[] skippedItems)
         {
-            foreach (var skippedItem in skippedItems)
+            for (var i = 0; i < skippedItems.Length; i++)
             {
-                if (item == skippedItem.Script)
+                if (item == skippedItems[i].Script)
                     return true;
             }
+
             return false;
         }
 
@@ -234,8 +243,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         {
             EditorGUILayout.LabelField(label + ':');
             GUILayout.Space(10);
-            foreach (var systemScript in systems)
+            for (var i = 0; i < systems.Count; i++)
             {
+                var systemScript = systems[i];
                 var systemName = systemScript.GetClass().FullName;
                 if (!IntegrationHelper.IsSearchMatch(_addSearch, systemName) || ShouldSkipItem(systemScript, except))
                     continue;
@@ -251,6 +261,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
 
                 EditorGUILayout.EndHorizontal();
             }
+
             GUILayout.Space(10);
         }
 
@@ -265,7 +276,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             // Update the serialized object
             serializedObject.Update();
 
-            SerializedProperty arrayProperty = serializedObject.FindProperty(propertyName);
+            SerializedProperty arrayProperty = GetCachedSerializedProperty(propertyName);
             
             // Filter the list and draw only matching elements
             if (!string.IsNullOrEmpty(_addedSearch))
@@ -294,6 +305,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             {
                 arrayProperty.DeleteArrayElementAtIndex(_removedElement);
                 _removedElement = -1;
+                EditorUtility.SetDirty(target);
             }
 
             // Apply changes back to the serialized object
