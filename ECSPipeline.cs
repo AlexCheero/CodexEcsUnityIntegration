@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
@@ -16,10 +15,43 @@ namespace CodexFramework.CodexEcsUnityIntegration
         [Serializable]
         public struct SystemEntry
         {
+#if UNITY_EDITOR
             public MonoScript Script;
+#endif
+            public string Name;
             public bool Active;
         }
-        
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            bool SynchScriptsWithTypeNames(SystemEntry[] systems)
+            {
+                var isDirty = false;
+                for (var i = 0; i < systems.Length; i++)
+                {
+                    isDirty |= !systems[i].Name.Equals(systems[i].Script.GetClass().FullName);
+                    systems[i].Name = systems[i].Script.GetClass().Name;
+                }
+                return isDirty;
+            }
+
+            var isDirty = SynchScriptsWithTypeNames(_initSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_updateSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_lateUpdateSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_fixedUpdateSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_lateFixedUpdateSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_enableSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_disableSystemScripts);
+            isDirty |= SynchScriptsWithTypeNames(_reactiveSystemScripts);
+
+            // if (isDirty)
+            // {
+            //     EditorUtility.SetDirty(this);
+            // }
+        }
+#endif
+
         private EcsWorld _world;
 
         private Dictionary<ESystemCategory, Dictionary<Type, int>> _systemToIndexMapping;
@@ -217,9 +249,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
             _systemToIndexMapping[category] = new();
             for (int i = 0; i < scripts.Length; i++)
             {
-                var systemType = scripts[i].Script.GetClass();
+                var systemType = IntegrationHelper.SystemTypes[scripts[i].Name];
                 if (systemType == null)
-                    throw new Exception("can't find system type " + scripts[i]);
+                    throw new Exception("can't find system type " + scripts[i].Name);
                 _systemToIndexMapping[category][systemType] = i;
                 systems[i] = (EcsSystem)Activator.CreateInstance(systemType, systemCtorParams);
             }

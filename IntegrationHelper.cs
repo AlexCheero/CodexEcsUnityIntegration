@@ -31,11 +31,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
         //TODO: unify with typenames from inspectors
         //TODO: why not use list?
         public static IEnumerable<Type> EcsComponentTypes;
+        public static Dictionary<string, Type> SystemTypes;
 
         static IntegrationHelper()
         {
             EcsComponentTypes = typeof(EntityView).Assembly.GetTypes()
                 .Where((t) => typeof(IComponent).IsAssignableFrom(t) || typeof(ITag).IsAssignableFrom(t));
+            
+            SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
+                .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
         }
 
 #if UNITY_EDITOR
