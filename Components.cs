@@ -3,12 +3,27 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
-    public struct CollisionComponent : IComponent
+    public struct CollisionEnterComponent : IComponent
     {
         public Vector3 contactPoint;
         public Collider collider;
         public Rigidbody rb;
     }
+    
+    public struct CollisionExitComponent : IComponent
+    {
+        public Vector3 contactPoint;
+        public Collider collider;
+        public Rigidbody rb;
+    }
+    
+    //TODO: probably stay components should have array of entries
+    // public struct CollisionStayComponent : IComponent
+    // {
+    //     public Vector3 contactPoint;
+    //     public Collider collider;
+    //     public Rigidbody rb;
+    // }
 
     public struct TriggerEnterComponent : IComponent
     {
@@ -19,6 +34,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     {
         public Collider collider;
     }
+    
+    // public struct TriggerStayComponent : IComponent
+    // {
+    //     public Collider collider;
+    // }
 }
 
 namespace CodexFramework.CodexEcsUnityIntegration.Tags

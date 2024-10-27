@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CodexFramework.CodexEcsUnityIntegration.Components;
-using CodexFramework.CodexEcsUnityIntegration.Tags;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
@@ -126,67 +124,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             if (_world != null && _world.IsEntityValid(_entity))
                 _world.Delete(_id);
-        }
-
-        void OnCollisionEnter(Collision collision)
-        {
-            if (!IsValid)
-            {
-#if DEBUG
-                Debug.Log("OnCollisionEnter invalid entity");
-#endif
-                return;
-            }
-            
-            var collisionComponent = new CollisionComponent
-            {
-                collider = collision.collider,
-                contactPoint = collision.GetContact(0).point,
-                rb = collision.rigidbody
-            };
-            if (Have<CollisionComponent>())
-            {
-                if (Have<OverrideCollision>())
-                    GetEcsComponent<CollisionComponent>() = collisionComponent;
-            }
-            else
-            {
-                Add(collisionComponent);
-            }
-        }
-
-        private void OnTriggerEnter(Collider other)
-        {
-            if (!IsValid)
-            {
-#if DEBUG
-                Debug.Log("OnTriggerEnter invalid entity");
-#endif
-                return;
-            }
-            
-            if (Have<TriggerEnterComponent>())
-            {
-                if (Have<OverrideTriggerEnter>())
-                    GetEcsComponent<TriggerEnterComponent>().collider = other;
-            }
-            else
-            {
-                Add(new TriggerEnterComponent { collider = other });
-            }
-        }
-
-        private void OnTriggerExit(Collider other)
-        {
-            if (Have<TriggerExitComponent>())
-            {
-                if (Have<OverrideTriggerExit>())
-                    GetEcsComponent<TriggerExitComponent>().collider = other;
-            }
-            else
-            {
-                Add(new TriggerExitComponent { collider = other });
-            }
         }
 
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
