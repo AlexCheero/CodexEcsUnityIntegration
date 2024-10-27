@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
+    public struct ControllerColliderHitComponent : IComponent
+    {
+        public Vector3 contactPoint;
+        public Collider collider;
+        public Rigidbody rb;
+    }
+    
     public struct CollisionEnterComponent : IComponent
     {
         public Vector3 contactPoint;

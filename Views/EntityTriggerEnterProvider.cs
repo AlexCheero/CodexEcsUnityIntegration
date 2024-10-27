@@ -5,15 +5,11 @@ using UnityEngine;
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     [RequireComponent(typeof(EntityView))]
-    public class EntityTriggerEnterProvider : MonoBehaviour
+    public class EntityTriggerEnterProvider : EntityUnityCallbackProvider
     {
-        private EntityView _view;
-        
-        void Awake() => _view = GetComponent<EntityView>();
-
         void OnTriggerEnter(Collider other)
         {
-            if (!_view.IsValid)
+            if (!view.IsValid)
             {
 #if DEBUG
                 Debug.Log("OnTriggerEnter invalid entity");
@@ -21,14 +17,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 return;
             }
             
-            if (_view.Have<TriggerEnterComponent>())
+            if (view.Have<TriggerEnterComponent>())
             {
-                if (_view.Have<OverrideTriggerEnter>())
-                    _view.GetEcsComponent<TriggerEnterComponent>().collider = other;
+                if (view.Have<OverrideTriggerEnter>())
+                    view.GetEcsComponent<TriggerEnterComponent>().collider = other;
             }
             else
             {
-                _view.Add(new TriggerEnterComponent { collider = other });
+                view.Add(new TriggerEnterComponent { collider = other });
             }
         }
     }

@@ -5,15 +5,11 @@ using UnityEngine;
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     [RequireComponent(typeof(EntityView))]
-    public class EntityCollisionEnterProvider : MonoBehaviour
+    public class EntityCollisionEnterProvider : EntityUnityCallbackProvider
     {
-        private EntityView _view;
-        
-        void Awake() => _view = GetComponent<EntityView>();
-
         void OnCollisionEnter(Collision collision)
         {
-            if (!_view.IsValid)
+            if (!view.IsValid)
             {
 #if DEBUG
                 Debug.Log("OnCollisionEnter invalid entity");
@@ -27,14 +23,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 contactPoint = collision.GetContact(0).point,
                 rb = collision.rigidbody
             };
-            if (_view.Have<CollisionEnterComponent>())
+            if (view.Have<CollisionEnterComponent>())
             {
-                if (_view.Have<OverrideCollision>())
-                    _view.GetEcsComponent<CollisionEnterComponent>() = collisionComponent;
+                if (view.Have<OverrideCollision>())
+                    view.GetEcsComponent<CollisionEnterComponent>() = collisionComponent;
             }
             else
             {
-                _view.Add(collisionComponent);
+                view.Add(collisionComponent);
             }
         }
     }

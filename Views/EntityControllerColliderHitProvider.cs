@@ -5,28 +5,28 @@ using UnityEngine;
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     [RequireComponent(typeof(EntityView))]
-    public class EntityCollisionExitProvider : EntityUnityCallbackProvider
+    public class EntityControllerColliderHitProvider : EntityUnityCallbackProvider
     {
-        void OnCollisionExit(Collision collision)
+        void OnControllerColliderHit(ControllerColliderHit hit)
         {
             if (!view.IsValid)
             {
 #if DEBUG
-                Debug.Log("OnCollisionExit invalid entity");
+                Debug.Log("OnCollisionEnter invalid entity");
 #endif
                 return;
             }
             
-            var collisionComponent = new CollisionExitComponent
+            var collisionComponent = new ControllerColliderHitComponent
             {
-                collider = collision.collider,
-                contactPoint = collision.GetContact(0).point,
-                rb = collision.rigidbody
+                collider = hit.collider,
+                contactPoint = hit.point,
+                rb = hit.rigidbody
             };
-            if (view.Have<CollisionExitComponent>())
+            if (view.Have<ControllerColliderHitComponent>())
             {
                 if (view.Have<OverrideCollision>())
-                    view.GetEcsComponent<CollisionExitComponent>() = collisionComponent;
+                    view.GetEcsComponent<ControllerColliderHitComponent>() = collisionComponent;
             }
             else
             {
