@@ -6,6 +6,11 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
+    public static class EntityViewExtension
+    {
+        public static bool IsViewValid(this EntityView view) => view != null && view.IsValid;
+    }
+    
     public class EntityView : MonoBehaviour
     {
         [SerializeField]
