@@ -27,7 +27,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
     public class ComponentView<T> : BaseComponentView
     {
-        public T Component;
+        public T Component = ComponentMeta<T>.DefaultValue;
 
         public override void AddToWorld(EcsWorld world, int id)
         {
