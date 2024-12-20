@@ -40,6 +40,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
             
             SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
                 .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
+
+            SystemCategories = (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory));
         }
 
 #if UNITY_EDITOR
@@ -53,5 +55,13 @@ namespace CodexFramework.CodexEcsUnityIntegration
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Has(this ESystemCategory mask, ESystemCategory flag) => (mask & flag) == flag;
+
+        public static ESystemCategory[] SystemCategories
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set;
+        }
     }
 }

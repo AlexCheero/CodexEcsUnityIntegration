@@ -13,26 +13,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
     [CustomEditor(typeof(ECSPipeline))]
     public class Pipeline_Inspector : UnityEditor.Editor
     {
-        //add more system types if needed
-        private const string InitSystemsLabel = "Init Systems";
-        private const string UpdateSystemsLabel = "Update Systems";
-        private const string LateUpdateSystemsLabel = "Late Update Systems";
-        private const string FixedSystemsLabel = "Fixed Update Systems";
-        private const string LateFixedSystemsLabel = "Late Fixed Update Systems";
-        private const string EnableSystemsLabel = "On Enable Systems";
-        private const string DisableSystemsLabel = "On Disable Systems";
-        private const string ReactiveSystemsLabel = "On Add Reactive Systems";
-
-        private static List<MonoScript> initSystems;
-        private static List<MonoScript> updateSystems;
-        private static List<MonoScript> lateUpdateSystems;
-        private static List<MonoScript> fixedUpdateSystems;
-        private static List<MonoScript> lateFixedUpdateSystems;
-        private static List<MonoScript> enableSystems;
-        private static List<MonoScript> disableSystems;
-        private static List<MonoScript> reactiveSystems;
-
-        private static List<MonoScript> systemScripts;
+        private static Dictionary<ESystemCategory, string> _systemLabels;
+        private static Dictionary<ESystemCategory, List<MonoScript>> _systemScripts;
 
         private bool _addListExpanded;
         private string _addSearch;
@@ -115,47 +97,40 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
 
         private void Initialize()
         {
-            var systems = Resources.FindObjectsOfTypeAll(typeof(MonoScript)).Where(obj =>
+            var systemsObjects = Resources.FindObjectsOfTypeAll(typeof(MonoScript)).Where(obj =>
             {
                 var monoScript = obj as MonoScript;
                 return monoScript != null && typeof(EcsSystem).IsAssignableFrom(monoScript.GetClass());
             });
-            systemScripts = new();
-            foreach (var systemObj in systems)
-                systemScripts.Add(systemObj as MonoScript);
-            
-            initSystems = new();
-            updateSystems = new();
-            lateUpdateSystems = new();
-            fixedUpdateSystems = new();
-            lateFixedUpdateSystems = new();
-            enableSystems = new();
-            disableSystems = new();
-            reactiveSystems = new();
 
-            foreach (var ms in systemScripts)
+            var allCategories = IntegrationHelper.SystemCategories;
+
+            _systemLabels = new(allCategories.Length);
+            foreach (var category in allCategories)
+                _systemLabels[category] = category.ToString();
+            
+            _systemScripts = new(allCategories.Length);
+            foreach (var category in allCategories)
+                _systemScripts[category] = new();
+
+            foreach (var systemObject in systemsObjects)
             {
-                var t = ms.GetClass();
+                var systemMonoscript = systemObject as MonoScript;
+                if (systemMonoscript == null)
+                {
+                    Debug.LogError("System object is not a MonoScript");
+                    continue;
+                }
+                var t = systemMonoscript.GetClass();
                 if (!t.IsSubclassOf(typeof(EcsSystem)))
                     continue;
                 var attribute = t.GetCustomAttribute<SystemAttribute>();
                 var categories = attribute != null ? attribute.Categories : ESystemCategory.Update;
-                if (categories.Has(ESystemCategory.Init))
-                    initSystems.Add(ms);
-                if (categories.Has(ESystemCategory.Update))
-                    updateSystems.Add(ms);
-                if (categories.Has(ESystemCategory.LateUpdate))
-                    lateUpdateSystems.Add(ms);
-                if (categories.Has(ESystemCategory.FixedUpdate))
-                    fixedUpdateSystems.Add(ms);
-                if (categories.Has(ESystemCategory.LateFixedUpdate))
-                    lateFixedUpdateSystems.Add(ms);
-                if (categories.Has(ESystemCategory.OnEnable))
-                    enableSystems.Add(ms);
-                if (categories.Has(ESystemCategory.OnDisable))
-                    disableSystems.Add(ms);
-                if (categories.Has(ESystemCategory.Reactive))
-                    reactiveSystems.Add(ms);
+                foreach (var category in allCategories)
+                {
+                    if (categories.Has(category))
+                        _systemScripts[category].Add(systemMonoscript);
+                }
             }
 
             _initList = InitializeSystemList("_initSystemScripts");
@@ -183,35 +158,24 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             {
                 _addSearch = EditorGUILayout.TextField(_addSearch);
                 EditorGUILayout.BeginVertical();
-                DrawAddList(InitSystemsLabel, initSystems, Pipeline._initSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.Init));
-                DrawAddList(UpdateSystemsLabel, updateSystems, Pipeline._updateSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.Update));
-                DrawAddList(LateUpdateSystemsLabel, lateUpdateSystems, Pipeline._lateUpdateSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.LateUpdate));
-                DrawAddList(FixedSystemsLabel, fixedUpdateSystems, Pipeline._fixedUpdateSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.FixedUpdate));
-                DrawAddList(LateFixedSystemsLabel, lateFixedUpdateSystems, Pipeline._lateFixedUpdateSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.LateFixedUpdate));
-                DrawAddList(EnableSystemsLabel, enableSystems, Pipeline._enableSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.OnEnable));
-                DrawAddList(DisableSystemsLabel, disableSystems, Pipeline._disableSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.OnDisable));
-                DrawAddList(ReactiveSystemsLabel, reactiveSystems, Pipeline._reactiveSystemScripts,
-                    script => OnAddSystem(script, ESystemCategory.Reactive));
+                foreach (var category in IntegrationHelper.SystemCategories)
+                {
+                    DrawAddList(_systemLabels[category], _systemScripts[category], Pipeline.GetSystemScriptsByCategory(category),
+                        script => OnAddSystem(script, category));
+                }
                 EditorGUILayout.EndVertical();
             }
 
             _addedSearch = EditorGUILayout.TextField(_addedSearch);
             //TODO: fold systems lists
-            DrawSystemCategory(_initList, "_initSystemScripts");
-            DrawSystemCategory(_updateList, "_updateSystemScripts");
-            DrawSystemCategory(_lateUpdateList, "_lateUpdateSystemScripts");
-            DrawSystemCategory(_fixedUpdateList, "_fixedUpdateSystemScripts");
-            DrawSystemCategory(_lateFixedUpdateList, "_lateFixedUpdateSystemScripts");
-            DrawSystemCategory(_enableList, "_enableSystemScripts");
-            DrawSystemCategory(_disableList, "_disableSystemScripts");
-            DrawSystemCategory(_reactiveList, "_reactiveSystemScripts");
+            DrawSystemCategory(_initList, _systemLabels[ESystemCategory.Init]);
+            DrawSystemCategory(_updateList, _systemLabels[ESystemCategory.Update]);
+            DrawSystemCategory(_lateUpdateList, _systemLabels[ESystemCategory.LateUpdate]);
+            DrawSystemCategory(_fixedUpdateList, _systemLabels[ESystemCategory.FixedUpdate]);
+            DrawSystemCategory(_lateFixedUpdateList, _systemLabels[ESystemCategory.LateFixedUpdate]);
+            DrawSystemCategory(_enableList, _systemLabels[ESystemCategory.OnEnable]);
+            DrawSystemCategory(_disableList, _systemLabels[ESystemCategory.OnDisable]);
+            DrawSystemCategory(_reactiveList, _systemLabels[ESystemCategory.Reactive]);
         }
 
         private static bool ShouldSkipItem(MonoScript item, ECSPipeline.SystemEntry[] skippedItems)

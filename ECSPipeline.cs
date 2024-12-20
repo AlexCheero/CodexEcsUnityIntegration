@@ -78,7 +78,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
         [SerializeField]
         public SystemEntry[] _reactiveSystemScripts = Array.Empty<SystemEntry>();
 
-        private ref SystemEntry[] GetSystemScriptsByCategory(ESystemCategory category)
+        public ref SystemEntry[] GetSystemScriptsByCategory(ESystemCategory category)
         {
             switch (category)
             {
