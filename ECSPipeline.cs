@@ -119,6 +119,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
             CreateSystemsByNames(ESystemCategory.OnEnable, systemCtorParams);
             CreateSystemsByNames(ESystemCategory.OnDisable, systemCtorParams);
             CreateSystemsByNames(ESystemCategory.Reactive, systemCtorParams);
+
+            foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
+                SubscribeSystemCategory(systemCategory);
         }
 
         public void Switch(bool on)
@@ -134,12 +137,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
         public void RunInitSystems()
         {
             TickSystemCategory(ESystemCategory.Init);
-            InitSystemCategory(ESystemCategory.Update);
-            InitSystemCategory(ESystemCategory.LateUpdate);
-            InitSystemCategory(ESystemCategory.FixedUpdate);
-            InitSystemCategory(ESystemCategory.LateFixedUpdate);
-            InitSystemCategory(ESystemCategory.OnEnable);
-            InitSystemCategory(ESystemCategory.OnDisable);
+            foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
+                InitSystemCategory(systemCategory);
         }
 
         public bool IsPaused { get; private set; }
@@ -214,6 +213,24 @@ namespace CodexFramework.CodexEcsUnityIntegration
             {
                 if (systemScripts[i].Active)
                     systems[i].Init(_world);
+            }
+        }
+        
+        private void SubscribeSystemCategory(ESystemCategory category)
+        {
+            var systems = GetSystemByCategory(category);
+            var systemScripts = GetSystemScriptsByCategory(category);
+#if DEBUG
+            if (systems != null && systems.Length != systemScripts.Length)
+                throw new Exception("systems and switches desynch");
+#endif
+            if (systems == null || systems.Length == 0)
+                return;
+
+            for (int i = 0; i < systems.Length; i++)
+            {
+                if (systemScripts[i].Active)
+                    systems[i].Subscribe(_world);
             }
         }
 

@@ -10,6 +10,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
 {
     public class SystemAttribute : Attribute
     {
+        //TODO: turn into flag
         public ESystemCategory[] Categories;
         public SystemAttribute(params ESystemCategory[] categories) => Categories = categories;
     }
