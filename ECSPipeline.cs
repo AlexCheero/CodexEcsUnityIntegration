@@ -119,9 +119,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
             CreateSystemsByNames(ESystemCategory.OnEnable, systemCtorParams);
             CreateSystemsByNames(ESystemCategory.OnDisable, systemCtorParams);
             CreateSystemsByNames(ESystemCategory.Reactive, systemCtorParams);
-
-            foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
-                SubscribeSystemCategory(systemCategory);
         }
 
         public void Switch(bool on)
@@ -216,24 +213,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
             }
         }
         
-        private void SubscribeSystemCategory(ESystemCategory category)
-        {
-            var systems = GetSystemByCategory(category);
-            var systemScripts = GetSystemScriptsByCategory(category);
-#if DEBUG
-            if (systems != null && systems.Length != systemScripts.Length)
-                throw new Exception("systems and switches desynch");
-#endif
-            if (systems == null || systems.Length == 0)
-                return;
-
-            for (int i = 0; i < systems.Length; i++)
-            {
-                if (systemScripts[i].Active)
-                    systems[i].Subscribe(_world);
-            }
-        }
-
         private void TickSystemCategory(ESystemCategory category, bool forceTick = false)
         {
             var systems = GetSystemByCategory(category);
