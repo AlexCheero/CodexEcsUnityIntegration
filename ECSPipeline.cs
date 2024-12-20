@@ -111,14 +111,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
             _systemToIndexMapping = new();
             _systems = new();
 
-            CreateSystemsByNames(ESystemCategory.Init, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.Update, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.LateUpdate, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.FixedUpdate, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.LateFixedUpdate, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.OnEnable, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.OnDisable, systemCtorParams);
-            CreateSystemsByNames(ESystemCategory.Reactive, systemCtorParams);
+            foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
+                CreateSystemsByNames(systemCategory, systemCtorParams);
         }
 
         public void Switch(bool on)
