@@ -139,37 +139,23 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 if (!t.IsSubclassOf(typeof(EcsSystem)))
                     continue;
                 var attribute = t.GetCustomAttribute<SystemAttribute>();
-                var categories = attribute != null ? attribute.Categories : new[] { ESystemCategory.Update };
-                foreach (var category in categories)
-                {
-                    switch (category)
-                    {
-                        case ESystemCategory.Init:
-                            initSystems.Add(ms);
-                            break;
-                        case ESystemCategory.Update:
-                            updateSystems.Add(ms);
-                            break;
-                        case ESystemCategory.LateUpdate:
-                            lateUpdateSystems.Add(ms);
-                            break;
-                        case ESystemCategory.FixedUpdate:
-                            fixedUpdateSystems.Add(ms);
-                            break;
-                        case ESystemCategory.LateFixedUpdate:
-                            lateFixedUpdateSystems.Add(ms);
-                            break;
-                        case ESystemCategory.OnEnable:
-                            enableSystems.Add(ms);
-                            break;
-                        case ESystemCategory.OnDisable:
-                            disableSystems.Add(ms);
-                            break;
-                        case ESystemCategory.Reactive:
-                            reactiveSystems.Add(ms);
-                            break;
-                    }
-                }
+                var categories = attribute != null ? attribute.Categories : ESystemCategory.Update;
+                if (categories.Has(ESystemCategory.Init))
+                    initSystems.Add(ms);
+                if (categories.Has(ESystemCategory.Update))
+                    updateSystems.Add(ms);
+                if (categories.Has(ESystemCategory.LateUpdate))
+                    lateUpdateSystems.Add(ms);
+                if (categories.Has(ESystemCategory.FixedUpdate))
+                    fixedUpdateSystems.Add(ms);
+                if (categories.Has(ESystemCategory.LateFixedUpdate))
+                    lateFixedUpdateSystems.Add(ms);
+                if (categories.Has(ESystemCategory.OnEnable))
+                    enableSystems.Add(ms);
+                if (categories.Has(ESystemCategory.OnDisable))
+                    disableSystems.Add(ms);
+                if (categories.Has(ESystemCategory.Reactive))
+                    reactiveSystems.Add(ms);
             }
 
             _initList = InitializeSystemList("_initSystemScripts");

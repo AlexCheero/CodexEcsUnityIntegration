@@ -2,29 +2,28 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodexFramework.CodexEcsUnityIntegration.Components;
-using CodexFramework.CodexEcsUnityIntegration.Tags;
+using System.Runtime.CompilerServices;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
     public class SystemAttribute : Attribute
     {
-        //TODO: turn into flag
-        public ESystemCategory[] Categories;
-        public SystemAttribute(params ESystemCategory[] categories) => Categories = categories;
+        public ESystemCategory Categories;
+        public SystemAttribute(ESystemCategory categories) => Categories = categories;
     }
 
+    [Flags]
     public enum ESystemCategory
     {
-        Init,
-        Update,
-        LateUpdate,
-        FixedUpdate,
-        LateFixedUpdate,
-        OnEnable,
-        OnDisable,
-        Reactive
+        Init            = 1 << 0,
+        Update          = 1 << 1,
+        LateUpdate      = 1 << 2,
+        FixedUpdate     = 1 << 3,
+        LateFixedUpdate = 1 << 4,
+        OnEnable        = 1 << 5,
+        OnDisable       = 1 << 6,
+        Reactive        = 1 << 7,
     }
 
     public static class IntegrationHelper
@@ -51,5 +50,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
             return name.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 #endif
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Has(this ESystemCategory mask, ESystemCategory flag) => (mask & flag) == flag;
     }
 }
