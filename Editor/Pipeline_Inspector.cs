@@ -20,6 +20,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         private string _addSearch;
         private string _addedSearch;
         
+        //TODO: rewrite with Dictionary lookups like _systemScripts. don't forget to rewrite EcsPipeline SystemScripts properties also
         private ReorderableList _initList;
         private ReorderableList _updateList;
         private ReorderableList _lateUpdateList;
