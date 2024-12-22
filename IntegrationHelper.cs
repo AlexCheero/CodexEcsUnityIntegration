@@ -7,6 +7,8 @@ using CodexFramework.CodexEcsUnityIntegration.Views;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
+    public class SkipViewGenerationAttribute : Attribute {}
+    
     public class SystemAttribute : Attribute
     {
         public ESystemCategory Categories;

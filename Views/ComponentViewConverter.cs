@@ -1,4 +1,6 @@
 using System.IO;
+using System.Reflection;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -6,7 +8,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
 
 #if UNITY_EDITOR
-    public class ComponentViewConverter : MonoBehaviour
+    static class ComponentViewConverter
     {
         private static readonly string ComponentViewTemplate =
             "using CodexECS;\r\n" +
@@ -37,6 +39,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         private static readonly string ViewsPath = "Assets/Scripts/Monobehaviours/ComponentViews/";
 
+        private static StringBuilder _registratorBuilder;
+
+        static ComponentViewConverter()
+        {
+            _registratorBuilder = new();
+        }
+        
         [MenuItem("CodeGen/ECS/Generate component views", false, -1)]
         public static void GenerateComponentViews()
         {
@@ -44,20 +53,29 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             foreach (FileInfo file in dir.GetFiles())
                 file.Delete();
 
+            _registratorBuilder.Clear();
             foreach (var type in IntegrationHelper.EcsComponentTypes)
             {
+                if (type.GetCustomAttribute<SkipViewGenerationAttribute>() != null)
+                    continue;
+                
+                if (type.IsGenericType)
+                {
+                    Debug.Log($"Can't generate view for generic type component {type.FullName}");
+                    continue;
+                }
+                
                 var viewCode = ComponentViewTemplate.Replace("<ComponentName>", type.Name);
                 using (StreamWriter writer = new StreamWriter(ViewsPath + type.Name + "View.cs"))
                 {
                     writer.WriteLine(viewCode);
                 }
+                
+                _registratorBuilder.Append("\t\t_viewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\r\n" +
+                                       "\t\tid = ComponentMeta<" + type.Name + ">.Id;\r\n");
             }
-
-            var registrationBody = "";
-            foreach (var type in IntegrationHelper.EcsComponentTypes)
-                registrationBody += "\t\t_viewsByCompTypes[typeof(" + type.Name + ")] = typeof(" + type.Name + "View);\r\n" +
-                    "\t\tid = ComponentMeta<" + type.Name + ">.Id;\r\n";
-            var registratorCode = ViewRegistratorTemplate.Replace("<RegisterHere>", registrationBody);
+            
+            var registratorCode = ViewRegistratorTemplate.Replace("<RegisterHere>", _registratorBuilder.ToString());
             using (StreamWriter writer = new StreamWriter(ViewsPath + "ViewRegistrator.cs"))
             {
                 writer.WriteLine(registratorCode);
