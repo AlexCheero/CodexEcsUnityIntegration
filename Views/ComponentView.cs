@@ -63,6 +63,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         void OnValidate()
         {
+            ComponentMeta<T>.Init(ref Component);
             if (_canValidate)
                 Owner.OnComponentValidate(this, Component);
         }
