@@ -111,7 +111,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         public bool Have<T>() => _world.Have<T>(_id);
-        public void Add<T>() => _world.Add(_id, ComponentMeta<T>.DefaultValue);
+        public void Add<T>() => _world.Add<T>(_id);
         public void Add<T>(T component) => _world.Add(_id, component);
         public void TryAdd<T>() => _world.TryAdd<T>(_id);
         public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
