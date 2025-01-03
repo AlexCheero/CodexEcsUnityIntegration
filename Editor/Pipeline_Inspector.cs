@@ -107,8 +107,18 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             var allCategories = IntegrationHelper.SystemCategories;
 
             _systemLabels = new(allCategories.Length);
-            foreach (var category in allCategories)
-                _systemLabels[category] = category.ToString();
+            //TODO: not working for now
+            // foreach (var category in allCategories)
+            //     _systemLabels[category] = category.ToString();
+            _systemLabels[ESystemCategory.Init] = nameof(ECSPipeline._initSystemScripts);
+            _systemLabels[ESystemCategory.Update] = nameof(ECSPipeline._updateSystemScripts);
+            _systemLabels[ESystemCategory.LateUpdate] = nameof(ECSPipeline._lateUpdateSystemScripts);
+            _systemLabels[ESystemCategory.FixedUpdate] = nameof(ECSPipeline._fixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.LateFixedUpdate] = nameof(ECSPipeline._lateFixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.OnEnable] = nameof(ECSPipeline._enableSystemScripts);
+            _systemLabels[ESystemCategory.OnDisable] = nameof(ECSPipeline._disableSystemScripts);
+            _systemLabels[ESystemCategory.Reactive] = nameof(ECSPipeline._reactiveSystemScripts);
+            //===================================================
             
             _systemScripts = new(allCategories.Length);
             foreach (var category in allCategories)
@@ -134,14 +144,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 }
             }
 
-            _initList = InitializeSystemList("_initSystemScripts");
-            _updateList = InitializeSystemList("_updateSystemScripts");
-            _lateUpdateList = InitializeSystemList("_lateUpdateSystemScripts");
-            _fixedUpdateList = InitializeSystemList("_fixedUpdateSystemScripts");
-            _lateFixedUpdateList = InitializeSystemList("_lateFixedUpdateSystemScripts");
-            _enableList = InitializeSystemList("_enableSystemScripts");
-            _disableList = InitializeSystemList("_disableSystemScripts");
-            _reactiveList = InitializeSystemList("_reactiveSystemScripts");
+            _initList = InitializeSystemList(nameof(ECSPipeline._initSystemScripts));
+            _updateList = InitializeSystemList(nameof(ECSPipeline._updateSystemScripts));
+            _lateUpdateList = InitializeSystemList(nameof(ECSPipeline._lateUpdateSystemScripts));
+            _fixedUpdateList = InitializeSystemList(nameof(ECSPipeline._fixedUpdateSystemScripts));
+            _lateFixedUpdateList = InitializeSystemList(nameof(ECSPipeline._lateFixedUpdateSystemScripts));
+            _enableList = InitializeSystemList(nameof(ECSPipeline._enableSystemScripts));
+            _disableList = InitializeSystemList(nameof(ECSPipeline._disableSystemScripts));
+            _reactiveList = InitializeSystemList(nameof(ECSPipeline._reactiveSystemScripts));
         }
 
         public override VisualElement CreateInspectorGUI()
