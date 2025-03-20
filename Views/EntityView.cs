@@ -2,6 +2,7 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
@@ -78,7 +79,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             var genericType = typeof(ComponentMeta<>);
             var specificType = genericType.MakeGenericType(type);
-            specificType.TypeInitializer?.Invoke(null, null);
+            
+            // specificType.TypeInitializer?.Invoke(null, null);
+            // fore some reason code above called static ctor twice so I used this code instead
+            RuntimeHelpers.RunClassConstructor(specificType.TypeHandle);
         }
 
         public int InitAsEntityWithChildren(EcsWorld world)
