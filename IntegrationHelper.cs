@@ -38,7 +38,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
         static IntegrationHelper()
         {
             EcsComponentTypes = typeof(EntityView).Assembly.GetTypes()
-                .Where((t) => typeof(IComponent).IsAssignableFrom(t) || typeof(ITag).IsAssignableFrom(t));
+                .Where(t => typeof(IComponent).IsAssignableFrom(t) && t != typeof(IComponent));
             
             SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
                 .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);

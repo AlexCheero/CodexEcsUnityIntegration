@@ -119,7 +119,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public void Add<T>(T component) => _world.Add(_id, component);
         public void TryAdd<T>() => _world.TryAdd<T>(_id);
         public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
-        public ref T GetEcsComponent<T>() => ref _world.GetComponent<T>(_id);
+        public ref T GetEcsComponent<T>() => ref _world.Get<T>(_id);
         public void Remove<T>() => _world.Remove<T>(_id);
         public void TryRemove<T>() => _world.TryRemove<T>(_id);
 
@@ -159,8 +159,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             _viewsByComponentType[typeof(T)] = view;
             if (component is IComponent)
                 GetOrAdd<T>() = component;
-            else if (component is ITag && !Have<T>())
-                Add<T>();
         }
 
         public void OnComponentDisable<T>()
@@ -189,8 +187,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                     continue;
 
                 var isComponent = typeof(IComponent).IsAssignableFrom(type);
-                var isTag = typeof(ITag).IsAssignableFrom(type);
-                if (!isComponent && !isTag)
+                if (!isComponent)
                     continue;
 
                 if (!_viewsByComponentType.ContainsKey(type))
@@ -203,8 +200,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                     _validationGuard = false;
                 }
 
-                if (isComponent)
-                    _viewsByComponentType[type].UpdateFromWorld(_world, _id);
+                _viewsByComponentType[type].UpdateFromWorld(_world, _id);
             }
 
             _typesToCheck.Clear();

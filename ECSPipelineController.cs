@@ -66,14 +66,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
         public void Pause() => CurrentPipeline.Pause();
         public void Unpause() => CurrentPipeline.Unpause();
 
-        public void CreateEntityWithComponent<T>(T comp = default)
-        {
-            var id = _world.Create();
-            if (comp is ITag)
-                _world.Add<T>(id);
-            else
-                _world.Add(id, comp);
-        }
+        public void CreateEntityWithComponent<T>(T comp = default) => _world.Add(_world.Create(), comp);
 
         public void ReRunInit()
         {

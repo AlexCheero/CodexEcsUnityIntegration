@@ -50,7 +50,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
 
 namespace CodexFramework.CodexEcsUnityIntegration.Tags
 {
-    public struct OverrideCollision : ITag { }
-    public struct OverrideTriggerEnter : ITag { }
-    public struct OverrideTriggerExit : ITag { }
+    public struct OverrideCollision : IComponent { }
+    public struct OverrideTriggerEnter : IComponent { }
+    public struct OverrideTriggerExit : IComponent { }
 }
