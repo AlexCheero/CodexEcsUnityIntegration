@@ -12,6 +12,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             EditorGUI.BeginProperty(position, label, property);
 
             // Draw the object field as usual
+            //CODEX_TODO: uses typeof(EntityView) but should also work with typeof(PooledEntityView)
             var newValue =
                 EditorGUI.ObjectField(position, label, property.objectReferenceValue, typeof(EntityView), true);
 
@@ -38,24 +39,27 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                     newValue = null; // cancel the assignment
                     goto ValidationFinished;
                 }
-                
-                foreach (var excluded in attr.ExcludedComponents)
+
+                if (attr.ExcludedComponents != null)
                 {
-                    if (go.GetComponent(excluded) == null)
-                        continue;
-                    Debug.LogError($"Exclude component: {excluded.Name}");
-                    
-                    //CODEX_TODO: draws only for one frame, try to fix
-                    // EditorGUI.HelpBox(position, $"Exclude component: {excluded.Name}", MessageType.Error);
-                    
-                    EditorUtility.DisplayDialog(
-                        $"Exclude component: {excluded.Name}",
-                        $"Game object should have no: {excluded.Name}",
-                        "ok"
-                    );
-                    
-                    newValue = null; // cancel the assignment
-                    goto ValidationFinished;
+                    foreach (var excluded in attr.ExcludedComponents)
+                    {
+                        if (go.GetComponent(excluded) == null)
+                            continue;
+                        Debug.LogError($"Exclude component: {excluded.Name}");
+
+                        //CODEX_TODO: draws only for one frame, try to fix
+                        // EditorGUI.HelpBox(position, $"Exclude component: {excluded.Name}", MessageType.Error);
+
+                        EditorUtility.DisplayDialog(
+                            $"Exclude component: {excluded.Name}",
+                            $"Game object should have no: {excluded.Name}",
+                            "ok"
+                        );
+
+                        newValue = null; // cancel the assignment
+                        goto ValidationFinished;
+                    }
                 }
             }
 
