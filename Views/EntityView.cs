@@ -14,6 +14,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     
     public class EntityView : MonoBehaviour
     {
+#if UNITY_EDITOR
+        [SerializeField]
+        private bool _updateInspector;
+#endif
+        
         [SerializeField]
         private bool _forceInit;
         public bool ForceInit => _forceInit;
@@ -177,6 +182,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         void LateUpdate()
         {
+            if (!_updateInspector)
+                return;
+            
             if (!IsValid)
                 return;
 
