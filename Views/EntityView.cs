@@ -2,7 +2,6 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -31,14 +30,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
         private SimpleList<TypeSystemPair> _componentsBuffer;
 
-        private static readonly Dictionary<Type, MethodInfo> _addMultipleMethodInfos;
-        private static readonly object[] _addMultipleParams;
-        
         static EntityView()
         {
             ViewRegistrator.Register();
-            _addMultipleMethodInfos = new();
-            _addMultipleParams = new object[2];
         }
 
         private BaseComponentView[] _componentViews;
@@ -133,25 +127,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             for (int i = 0; i < _componentsBuffer.Length; i++)
             {
                 ref readonly var componentTuple = ref _componentsBuffer[i];
-                //condition to avoid unnecessary expensive lambda compilation
-                if (world.Have(ComponentMapping.GetIdForType(componentTuple.Type), _id))
-                    CallAddMultipleDynamic(componentTuple.Type, world, _id, componentTuple.Component);
-                else
-                    world.AddReference(componentTuple.Type, _id, componentTuple.Component);
+                world.AddMultiple_Dynamic(componentTuple.Type, _id, componentTuple.Component);
             }
-        }
-
-        private void CallAddMultipleDynamic(Type componentType, EcsWorld world, int id, Component component)
-        {
-            if (!_addMultipleMethodInfos.ContainsKey(componentType))
-            {
-                var generalMethod = typeof(EcsWorld).GetMethod(nameof(EcsWorld.AddMultiple_dynamic));
-                _addMultipleMethodInfos[componentType] = generalMethod.MakeGenericMethod(componentType);
-            }
-            
-            _addMultipleParams[0] = id;
-            _addMultipleParams[1] = component;
-            _addMultipleMethodInfos[componentType].Invoke(world, _addMultipleParams);
         }
 
         public bool Have<T>() => _world.Have<T>(_id);
