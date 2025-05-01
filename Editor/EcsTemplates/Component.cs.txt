@@ -1,0 +1,13 @@
+using CodexECS;
+
+public struct #SCRIPTNAME# : IComponent
+{
+    /*init default value here*/
+    public static #SCRIPTNAME# Default => new() { };
+
+    /*call init logic here*/
+    public static void Init(ref #SCRIPTNAME# instance) { }
+
+    /*call cleanup logic here*/
+    public static void Cleanup(ref #SCRIPTNAME# instance) { }
+}
