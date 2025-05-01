@@ -2,7 +2,6 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -32,13 +31,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
         private SimpleList<TypeSystemPair> _componentsBuffer;
 
-        private delegate void AddMultipleDelegate(EcsWorld world, int id, Component component);
-        private static readonly Dictionary<Type, AddMultipleDelegate> _addMultipleDelegates;
+        private static readonly Dictionary<Type, MethodInfo> _addMultipleMethodInfos;
+        private static readonly object[] _addMultipleParams;
         
         static EntityView()
         {
             ViewRegistrator.Register();
-            _addMultipleDelegates = new();
+            _addMultipleMethodInfos = new();
+            _addMultipleParams = new object[2];
         }
 
         private BaseComponentView[] _componentViews;
@@ -135,35 +135,25 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 ref readonly var componentTuple = ref _componentsBuffer[i];
                 //condition to avoid unnecessary expensive lambda compilation
                 if (world.Have(ComponentMapping.GetIdForType(componentTuple.Type), _id))
-                    GetAddMultipleDelegate(componentTuple.Type)(world, _id, componentTuple.Component);
+                    CallAddMultipleDynamic(componentTuple.Type, world, _id, componentTuple.Component);
                 else
                     world.AddReference(componentTuple.Type, _id, componentTuple.Component);
             }
         }
 
-        private static AddMultipleDelegate GetAddMultipleDelegate(Type componentType)
+        private void CallAddMultipleDynamic(Type componentType, EcsWorld world, int id, Component component)
         {
-            if (_addMultipleDelegates.TryGetValue(componentType, out var addMultipleDelegate))
-                return addMultipleDelegate;
-            var target = Expression.Parameter(typeof(EcsWorld), "target");
-            var arg0 = Expression.Parameter(typeof(int), "id");
-            var arg1 = Expression.Parameter(typeof(object), "component");
-
-            var generalMethod = typeof(EcsWorld).GetMethod(nameof(EcsWorld.AddMultiple_dynamic));
-            var method = generalMethod.MakeGenericMethod(componentType);
-            var instanceCast = Expression.Convert(target, method.DeclaringType!);
-            var genericParamCast = Expression.Convert(arg1, componentType);
-
-            var call = Expression.Call(instanceCast, method, arg0, genericParamCast);
-
-            var lambda = Expression.Lambda<AddMultipleDelegate>(call, target, arg0, arg1);
-            var compiled = lambda.Compile();
-
-            _addMultipleDelegates[componentType] = compiled;
-
-            return _addMultipleDelegates[componentType];
+            if (!_addMultipleMethodInfos.ContainsKey(componentType))
+            {
+                var generalMethod = typeof(EcsWorld).GetMethod(nameof(EcsWorld.AddMultiple_dynamic));
+                _addMultipleMethodInfos[componentType] = generalMethod.MakeGenericMethod(componentType);
+            }
+            
+            _addMultipleParams[0] = id;
+            _addMultipleParams[1] = component;
+            _addMultipleMethodInfos[componentType].Invoke(world, _addMultipleParams);
         }
-        
+
         public bool Have<T>() => _world.Have<T>(_id);
         public void Add<T>() => _world.Add<T>(_id);
         public void Add<T>(T component) => _world.Add(_id, component);
