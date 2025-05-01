@@ -7,22 +7,22 @@ public class #SCRIPTNAME# : EcsSystem
 {
     private readonly EcsFilter _filter;
 
+    public override bool IsEnabled => _filter.EntitiesCount > 0;
+
     public #SCRIPTNAME#(EcsWorld world)
     {
-        //_filter = world.RegisterFilter(
-        //    //includes
-        //    new BitMask(Id<Comp1>(), Id<Comp2>()),
-        //    //excludes
-        //    new BitMask(Id<Comp3>(), Id<Comp4>())
-        //    );
+        _filter = world.Filter()
+            //.With<Component1>()
+            //.Without<Component2>()
+            .Build();
     }
 
     public override void Tick(EcsWorld world)
     {
-        foreach (var id in _filter)
+        foreach (var eid in _filter)
         {
-            //world.GetComponent<Comp1>(id)
-            //world.Have<Comp4>(id)
+            //world.GetComponent<Comp1>(eid)
+            //world.Have<Comp4>(eid)
         }
     }
 }
