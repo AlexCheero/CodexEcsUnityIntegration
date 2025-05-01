@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
@@ -20,6 +21,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
 #endif
             public string Name;
             public bool Active;
+            public bool NonPausable;
         }
 
 #if UNITY_EDITOR
@@ -218,10 +220,12 @@ namespace CodexFramework.CodexEcsUnityIntegration
             if (systems == null || systems.Length == 0)
                 return;
 
+            var isPaused = !forceTick && IsPaused;
             for (int i = 0; i < systems.Length; i++)
             {
-                bool shouldReturn = !forceTick && IsPaused && systems[i].IsPausable;
-                if (shouldReturn)
+                if (!systems[i].IsEnabled)
+                    continue;
+                if (isPaused && !systemScripts[i].NonPausable)
                     continue;
                 if (systemScripts[i].Active)
                     systems[i].Tick(_world);

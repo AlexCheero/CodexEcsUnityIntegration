@@ -62,10 +62,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             reorderableList.drawElementCallback = (rect, index, _, _) =>
             {
                 var element = reorderableList.serializedProperty.GetArrayElementAtIndex(index);
-                var scriptProp = element.FindPropertyRelative("Script");
-                var activeProp = element.FindPropertyRelative("Active");
+                var scriptProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Script));
+                var activeProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Active));
+                var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.NonPausable));
 
-                DrawElement(rect, scriptProp, activeProp, arrayProperty, index);
+                DrawElement(rect, scriptProp, activeProp, nonPausableProp, index);
             };
 
             reorderableList.elementHeightCallback = _ => EditorGUIUtility.singleLineHeight;
@@ -80,20 +81,37 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         }
         
         private int _removedElement = -1;
-        private void DrawElement(Rect rect, SerializedProperty scriptProp, SerializedProperty activeProp, SerializedProperty arrayProperty, int index)
+        private GUIContent _systemToggleContent = new GUIContent();
+        private void DrawElement(Rect rect, SerializedProperty scriptProp, SerializedProperty activeProp, SerializedProperty nonPausableProp, int index)
         {
             var lineHeight = EditorGUIUtility.singleLineHeight;
-            const float gap = 5.0f;
-        
-            //TODO: fix indents
-            EditorGUI.ObjectField(new Rect(rect.x, rect.y, rect.width - lineHeight - 30, EditorGUIUtility.singleLineHeight),
-                scriptProp, GUIContent.none);
-        
-            EditorGUI.PropertyField(new Rect(rect.x + rect.width - 2*lineHeight, rect.y, 30, EditorGUIUtility.singleLineHeight),
-                activeProp, GUIContent.none);
-
-            if (GUI.Button(new Rect(rect.x + rect.width - lineHeight, rect.y, lineHeight, lineHeight), "-"))
+            var nearestLeft = rect.width - lineHeight;
+            const float gap = 3.0f;
+            if (GUI.Button(new Rect(rect.x + nearestLeft, rect.y, lineHeight, lineHeight), "-"))
                 _removedElement = index;
+            nearestLeft -= 15 + gap;
+
+            nonPausableProp.boolValue = EditorGUI.Toggle(new Rect(rect.x + nearestLeft, rect.y, lineHeight, lineHeight), nonPausableProp.boolValue);
+            nearestLeft -= gap;
+            const string nonPausableLabel = "N:";
+            const float widthPerCharacter = 6.5f;
+            float labelWidth = nonPausableLabel.Length * widthPerCharacter;
+            nearestLeft -= labelWidth + 1;
+            _systemToggleContent.text = nonPausableLabel;
+            _systemToggleContent.tooltip = "Non pausable";
+            EditorGUI.LabelField(new Rect(rect.x + nearestLeft, rect.y, labelWidth + lineHeight + gap, lineHeight), _systemToggleContent);
+
+            nearestLeft -= lineHeight + gap;
+            activeProp.boolValue = EditorGUI.Toggle(new Rect(rect.x + nearestLeft, rect.y, lineHeight, lineHeight), activeProp.boolValue);
+            const string activeLabel = "A:";
+            labelWidth = activeLabel.Length * widthPerCharacter;
+            nearestLeft -= labelWidth + 1;
+            _systemToggleContent.text = activeLabel;
+            _systemToggleContent.tooltip = "Active";
+            EditorGUI.LabelField(new Rect(rect.x + nearestLeft, rect.y, labelWidth + lineHeight + gap, lineHeight), _systemToggleContent);
+
+            nearestLeft -= gap;
+            EditorGUI.ObjectField(new Rect(rect.x, rect.y, nearestLeft, lineHeight), scriptProp, GUIContent.none);
         }
 
         private void Initialize()
@@ -245,14 +263,15 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 for (int i = 0; i < arrayProperty.arraySize; i++)
                 {
                     var element = arrayProperty.GetArrayElementAtIndex(i);
-                    var scriptProp = element.FindPropertyRelative("Script");
+                    var scriptProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Script));
 
                     if (scriptProp.objectReferenceValue != null &&
                         scriptProp.objectReferenceValue.name.Contains(_addedSearch, StringComparison.InvariantCultureIgnoreCase))
                     {
                         var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
-                        var activeProp = element.FindPropertyRelative("Active");
-                        DrawElement(rect, scriptProp, activeProp, arrayProperty, i);
+                        var activeProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Active));
+                        var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.NonPausable));
+                        DrawElement(rect, scriptProp, activeProp, nonPausableProp, i);
                     }
                 }
             }
