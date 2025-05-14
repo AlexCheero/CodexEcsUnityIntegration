@@ -223,8 +223,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
             var isPaused = !forceTick && IsPaused;
             for (int i = 0; i < systems.Length; i++)
             {
-                if (!systems[i].IsEnabled)
-                    continue;
                 if (isPaused && !systemScripts[i].NonPausable)
                     continue;
                 if (systemScripts[i].Active)
