@@ -1,5 +1,7 @@
+using System;
 using CodexECS;
 
+[Serializable]
 public struct #SCRIPTNAME# : IComponent
 {
     /*init default value here*/
