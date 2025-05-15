@@ -19,7 +19,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             // Validation
             if (newValue != null)
             {
-                var go = ((EntityView)newValue).gameObject;
+                var go = ((Component)newValue).gameObject;
                 var attr = (ComponentFilterAttribute)attribute;
                 foreach (var required in attr.RequiredComponents)
                 {
