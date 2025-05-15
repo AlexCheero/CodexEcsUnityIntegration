@@ -7,8 +7,6 @@ public class #SCRIPTNAME# : EcsSystem
 {
     private readonly EcsFilter _filter;
 
-    public override bool IsEnabled => _filter.EntitiesCount > 0;
-
     public #SCRIPTNAME#(EcsWorld world)
     {
         _filter = world.Filter()
