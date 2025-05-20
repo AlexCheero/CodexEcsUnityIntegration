@@ -153,6 +153,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 _world.Delete(_id);
         }
 
+        public override string ToString() => World.DebugEntity(Id, true);
+
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
         private bool _validationGuard;//hack to not loose values on inspector update in late update
         public void OnComponentValidate<T>(BaseComponentView view, T component)
