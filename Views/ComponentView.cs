@@ -37,6 +37,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
         public override void UpdateFromWorld(EcsWorld world, int id)
         {
+            if (ComponentMeta<T>.IsTag)
+                return;
+
             var comp = world.Get<T>(id);
             Component = comp;
         }
