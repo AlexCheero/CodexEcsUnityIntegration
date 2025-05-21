@@ -5,23 +5,17 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
     public struct ControllerColliderHitComponent : IComponent
     {
-        public Vector3 contactPoint;
-        public Collider collider;
-        public Rigidbody rb;
+        public ControllerColliderHit hit;
     }
     
     public struct CollisionEnterComponent : IComponent
     {
-        public Vector3 contactPoint;
-        public Collider collider;
-        public Rigidbody rb;
+        public Collision collision;
     }
     
     public struct CollisionExitComponent : IComponent
     {
-        public Vector3 contactPoint;
-        public Collider collider;
-        public Rigidbody rb;
+        public Collision collision;
     }
     
     //TODO: probably stay components should have array of entries

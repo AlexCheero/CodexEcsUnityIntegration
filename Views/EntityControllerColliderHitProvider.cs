@@ -19,9 +19,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             
             var collisionComponent = new ControllerColliderHitComponent
             {
-                collider = hit.collider,
-                contactPoint = hit.point,
-                rb = hit.rigidbody
+                hit = hit
             };
             if (view.Have<ControllerColliderHitComponent>())
             {
