@@ -166,7 +166,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 return;
 
             _viewsByComponentType[typeof(T)] = view;
-            if (component is IComponent)
+            if (!ComponentMeta<T>.IsTag)
                 GetOrAdd<T>() = component;
         }
 
@@ -176,7 +176,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 return;
 
             _viewsByComponentType[typeof(T)] = view;
-            if (component is IComponent)
+            if (!ComponentMeta<T>.IsTag)
                 GetOrAdd<T>() = component;
         }
 
