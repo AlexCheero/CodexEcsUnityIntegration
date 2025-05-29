@@ -20,7 +20,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             var collisionComponent = new CollisionExitComponent
             {
                 collider = collision.collider,
-                contactPoint = collision.GetContact(0).point,
+                contactPoint = collision.contacts[0].point,
+                normal = collision.contacts[0].normal,
                 rb = collision.rigidbody
             };
             if (view.Have<CollisionExitComponent>())

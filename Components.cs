@@ -6,6 +6,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     public struct ControllerColliderHitComponent : IComponent
     {
         public Vector3 contactPoint;
+        public Vector3 normal;
         public Collider collider;
         public Rigidbody rb;
     }
@@ -13,6 +14,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     public struct CollisionEnterComponent : IComponent
     {
         public Vector3 contactPoint;
+        public Vector3 normal;
         public Collider collider;
         public Rigidbody rb;
     }
@@ -20,6 +22,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     public struct CollisionExitComponent : IComponent
     {
         public Vector3 contactPoint;
+        public Vector3 normal;
         public Collider collider;
         public Rigidbody rb;
     }
