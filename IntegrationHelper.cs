@@ -3,12 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using CodexFramework.CodexEcsUnityIntegration.Views;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
-    public class SkipViewGenerationAttribute : Attribute {}
-    
     public class SystemAttribute : Attribute
     {
         public ESystemCategory Categories;
@@ -30,16 +27,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
     public static class IntegrationHelper
     {
-        //TODO: unify with typenames from inspectors
-        //TODO: why not use list?
-        public static IEnumerable<Type> EcsComponentTypes;
         public static Dictionary<string, Type> SystemTypes;
 
         static IntegrationHelper()
         {
-            EcsComponentTypes = typeof(EntityView).Assembly.GetTypes()
-                .Where(t => typeof(IComponent).IsAssignableFrom(t) && t != typeof(IComponent));
-            
             SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
                 .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
 

@@ -1,6 +1,11 @@
 using System;
 using CodexECS;
 
+//Move this to separate file with name #SCRIPTNAME#View.cs to be able to assign it to game object
+//using UnityEngine;
+//using CodexFramework.CodexEcsUnityIntegration.Views;
+//[DisallowMultipleComponent] public class #SCRIPTNAME#View : ComponentView<#SCRIPTNAME#>{}
+
 [Serializable]
 public struct #SCRIPTNAME# : IComponent
 {

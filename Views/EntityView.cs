@@ -30,11 +30,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
         private SimpleList<TypeSystemPair> _componentsBuffer;
 
-        static EntityView()
-        {
-            ViewRegistrator.Register();
-        }
-
         private BaseComponentView[] _componentViews;
         private EcsWorld _world;
         private Entity _entity = EntityExtension.NullEntity;
