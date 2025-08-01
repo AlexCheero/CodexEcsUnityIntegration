@@ -1,3 +1,4 @@
+#if UNITY_EDITOR && CODEX_ECS_EDITOR
 using System;
 using System.Collections.Generic;
 using CodexECS;
@@ -43,3 +44,4 @@ namespace CodexFramework.CodexEcsUnityIntegration
         }
     }
 }
+#endif
