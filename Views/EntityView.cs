@@ -126,13 +126,27 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Have<T>() => _world.Have<T>(_id);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add<T>() => _world.Add<T>(_id);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add<T>(T component) => _world.Add(_id, component);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TryAdd<T>() => _world.TryAdd<T>(_id);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetEcsComponent<T>() => ref _world.Get<T>(_id);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove<T>() => _world.Remove<T>(_id);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TryRemove<T>() => _world.TryRemove<T>(_id);
 
         public void DeleteFromWorld()
