@@ -9,6 +9,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     public static class EntityViewExtension
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsViewValid(this EntityView view) => view != null && view.IsValid;
     }
     
@@ -35,11 +36,38 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         private Entity _entity = EntityExtension.NullEntity;
         private int _id = -1;
 
-        public Entity Entity { get => _entity; private set => _entity = value; }
-        public EcsWorld World { get => _world; private set => _world = value; }
-        public int Id { get => _id; private set => _id = value; }
-        public int Version => _entity.GetVersion();
-        public bool IsValid => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity);
+        public Entity Entity
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _entity;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set => _entity = value;
+        }
+        public EcsWorld World
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _world;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set => _world = value;
+        }
+        public int Id
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _id;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set => _id = value;
+        }
+        public int Version
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _entity.GetVersion();
+        }
+
+        public bool IsValid
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity);
+        }
 
         //TODO: maybe move to void OnValidate()
         void Awake() => Init();
