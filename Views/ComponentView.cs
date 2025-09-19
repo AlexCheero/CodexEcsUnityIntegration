@@ -27,10 +27,21 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
     public class ComponentView<T> : BaseComponentView
     {
+#if UNITY_EDITOR
+        [SerializeField]
+        [HideInInspector]
+        //this field should go before Component because for some reason if it goes after
+        //OnValidate() gets the previous value of Component and thus Component's value can't be changed
+        private T _defaultComponent;
+#endif
+
         public T Component = ComponentMeta<T>.GetDefault();
 
         public override void AddToWorld(EcsWorld world, int id)
         {
+#if UNITY_EDITOR && CODEX_ECS_EDITOR
+            Component = _defaultComponent;
+#endif
             world.Add(id, Component);
         }
 
@@ -67,6 +78,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         void OnValidate()
         {
             ComponentMeta<T>.Init(ref Component);
+            _defaultComponent = Component;
             if (_canValidate)
                 Owner.OnComponentValidate(this, Component);
         }
