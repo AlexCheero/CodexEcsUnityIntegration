@@ -75,6 +75,12 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         //        Owner.OnComponentDisable<T>();
         //}
 
+        void Awake()
+        {
+            //object spawned from script won't call OnValidate
+            _defaultComponent = Component;
+        }
+
         void OnValidate()
         {
             ComponentMeta<T>.Init(ref Component);
