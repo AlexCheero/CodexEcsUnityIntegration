@@ -32,7 +32,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
         static IntegrationHelper()
         {
             SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
-                .Where((type) => type != typeof(EcsSystem) && typeof(EcsSystem).IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
+                .Where((type) => type != typeof(EcsSystem) && !type.IsGenericType && typeof(EcsSystem)
+                    .IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
 
             SystemCategories = (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory));
         }
