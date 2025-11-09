@@ -1,5 +1,6 @@
 using System;
 using CodexECS;
+using System.Runtime.CompilerServices;
 
 //Move this to separate file with name #SCRIPTNAME#View.cs to be able to assign it to game object
 //using UnityEngine;
@@ -10,11 +11,13 @@ using CodexECS;
 public struct #SCRIPTNAME# : IComponent
 {
     /*init default value here*/
-    public static #SCRIPTNAME# Default => new() { };
+    public static #SCRIPTNAME# Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new() { }; }
 
     /*call init logic here*/
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Init(ref #SCRIPTNAME# instance) { }
 
     /*call cleanup logic here*/
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Cleanup(ref #SCRIPTNAME# instance) { }
 }
