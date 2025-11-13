@@ -131,6 +131,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int InitAsEntity(EcsWorld world)
         {
+#if UNITY_EDITOR
+            if (IsValid)
+                Debug.LogError($"EntityView {name} is already valid");
+#endif
+            
             _world = world;
             _id = world.Create();
             _entity = _world.GetById(_id);
