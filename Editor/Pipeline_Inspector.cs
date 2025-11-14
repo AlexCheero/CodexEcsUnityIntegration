@@ -128,14 +128,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             //TODO: not working for now
             // foreach (var category in allCategories)
             //     _systemLabels[category] = category.ToString();
-            _systemLabels[ESystemCategory.Init] = nameof(ESystemCategory.Init);
-            _systemLabels[ESystemCategory.Update] = nameof(ESystemCategory.Update);
-            _systemLabels[ESystemCategory.LateUpdate] = nameof(ESystemCategory.LateUpdate);
-            _systemLabels[ESystemCategory.FixedUpdate] = nameof(ESystemCategory.FixedUpdate);
-            _systemLabels[ESystemCategory.LateFixedUpdate] = nameof(ESystemCategory.LateFixedUpdate);
-            _systemLabels[ESystemCategory.OnEnable] = nameof(ESystemCategory.OnEnable);
-            _systemLabels[ESystemCategory.OnDisable] = nameof(ESystemCategory.OnDisable);
-            _systemLabels[ESystemCategory.Reactive] = nameof(ESystemCategory.Reactive);
+            _systemLabels[ESystemCategory.Init] = nameof(ECSPipeline._initSystemScripts);
+            _systemLabels[ESystemCategory.Update] = nameof(ECSPipeline._updateSystemScripts);
+            _systemLabels[ESystemCategory.LateUpdate] = nameof(ECSPipeline._lateUpdateSystemScripts);
+            _systemLabels[ESystemCategory.FixedUpdate] = nameof(ECSPipeline._fixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.LateFixedUpdate] = nameof(ECSPipeline._lateFixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.OnEnable] = nameof(ECSPipeline._enableSystemScripts);
+            _systemLabels[ESystemCategory.OnDisable] = nameof(ECSPipeline._disableSystemScripts);
+            _systemLabels[ESystemCategory.Reactive] = nameof(ECSPipeline._reactiveSystemScripts);
             //===================================================
             
             _systemScripts = new(allCategories.Length);
