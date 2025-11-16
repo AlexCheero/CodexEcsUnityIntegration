@@ -11,17 +11,17 @@ using System.Runtime.CompilerServices;
 public struct #SCRIPTNAME# : IComponent
 {
     /*init default value here*/
-    public static #SCRIPTNAME# Default
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new() { };
-    }
+    //public static #SCRIPTNAME# Default
+    //{
+    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //    get => new() { };
+    //}
 
     /*call init logic here*/
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Init(ref #SCRIPTNAME# instance) { }
+    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //public static void Init(ref #SCRIPTNAME# instance) { }
 
     /*call cleanup logic here*/
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Cleanup(ref #SCRIPTNAME# instance) { }
+    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //public static void Cleanup(ref #SCRIPTNAME# instance) { }
 }
