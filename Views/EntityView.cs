@@ -161,6 +161,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Have<T>() => _world.Have<T>(_id);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Have(in BitMask mask) => _world.Have(mask, _id);
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add<T>() => _world.Add<T>(_id);
 
