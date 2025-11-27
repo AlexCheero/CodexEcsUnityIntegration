@@ -2,11 +2,18 @@
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
-    [RequireComponent(typeof(EntityView))]
     public abstract class EntityUnityCallbackProvider : MonoBehaviour
     {
-        protected EntityView view;
+        [SerializeField]
+        protected Collider collider;
+        [SerializeField]
+        public EntityView view;
         
-        protected virtual void Awake() => view = GetComponent<EntityView>();
+        private void OnValidate()
+        {
+            view = EntityViewHelper.GetOwnerEntityView(gameObject);
+            if (view == null)
+                Debug.LogError("EntityUnityCallbackProvider have no view");
+        }
     }
 }

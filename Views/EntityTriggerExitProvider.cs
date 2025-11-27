@@ -17,14 +17,19 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 return;
             }
             
+            var collisionComponent = new TriggerExitComponent
+            {
+                trigger = collider,
+                otherCollider = other
+            };
             if (view.Have<TriggerExitComponent>())
             {
                 if (view.Have<OverrideTriggerExit>())
-                    view.GetEcsComponent<TriggerExitComponent>().collider = other;
+                    view.GetEcsComponent<TriggerExitComponent>() = collisionComponent;
             }
             else
             {
-                view.Add(new TriggerExitComponent { collider = other });
+                view.Add(collisionComponent);
             }
         }
     }

@@ -19,7 +19,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             
             var collisionComponent = new CollisionExitComponent
             {
-                collider = collision.collider,
+                collider = collider,
+                otherCollider = collision.collider,
                 contactPoint = collision.contacts[0].point,
                 normal = collision.contacts[0].normal,
                 rb = collision.rigidbody

@@ -8,6 +8,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
         public Vector3 contactPoint;
         public Vector3 normal;
         public Collider collider;
+        public Collider otherCollider;
         public Rigidbody rb;
     }
     
@@ -16,6 +17,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
         public Vector3 contactPoint;
         public Vector3 normal;
         public Collider collider;
+        public Collider otherCollider;
         public Rigidbody rb;
     }
     
@@ -24,6 +26,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
         public Vector3 contactPoint;
         public Vector3 normal;
         public Collider collider;
+        public Collider otherCollider;
         public Rigidbody rb;
     }
     
@@ -32,21 +35,25 @@ namespace CodexFramework.CodexEcsUnityIntegration.Components
     // {
     //     public Vector3 contactPoint;
     //     public Collider collider;
+    //     public Collider otherCollider;
     //     public Rigidbody rb;
     // }
 
     public struct TriggerEnterComponent : IComponent
     {
-        public Collider collider;
+        public Collider trigger;
+        public Collider otherCollider;
     }
 
     public struct TriggerExitComponent : IComponent
     {
-        public Collider collider;
+        public Collider trigger;
+        public Collider otherCollider;
     }
     
     // public struct TriggerStayComponent : IComponent
     // {
+    //     public Collider trigger;
     //     public Collider collider;
     // }
 }
