@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
-    [RequireComponent(typeof(EntityView))]
     public class EntityTriggerEnterProvider : EntityUnityCallbackProvider
     {
         void OnTriggerEnter(Collider other)
@@ -19,7 +18,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             
             var collisionComponent = new TriggerEnterComponent
             {
-                trigger = collider,
+                trigger = thisCollider,
                 otherCollider = other
             };
             if (view.Have<TriggerEnterComponent>())

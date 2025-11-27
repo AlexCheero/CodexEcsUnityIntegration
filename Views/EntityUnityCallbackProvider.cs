@@ -1,19 +1,29 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
     public abstract class EntityUnityCallbackProvider : MonoBehaviour
     {
+        [FormerlySerializedAs("collider")]
         [SerializeField]
-        protected Collider collider;
+        protected Collider thisCollider;
         [SerializeField]
         public EntityView view;
         
+#if UNITY_EDITOR
         private void OnValidate()
         {
-            view = EntityViewHelper.GetOwnerEntityView(gameObject);
             if (view == null)
-                Debug.LogError("EntityUnityCallbackProvider have no view");
+                view = EntityViewHelper.GetOwnerEntityView(gameObject);
+            if (view == null)
+                Debug.LogError($"{name} EntityUnityCallbackProvider have no view");
+            
+            if (thisCollider == null)
+                thisCollider = GetComponent<Collider>();
+            if (thisCollider == null)
+                Debug.LogError($"{name} EntityUnityCallbackProvider has no Collider");
         }
+#endif
     }
 }

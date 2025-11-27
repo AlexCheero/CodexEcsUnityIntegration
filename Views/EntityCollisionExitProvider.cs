@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
-    [RequireComponent(typeof(EntityView))]
     public class EntityCollisionExitProvider : EntityUnityCallbackProvider
     {
         void OnCollisionExit(Collision collision)
@@ -19,7 +18,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             
             var collisionComponent = new CollisionExitComponent
             {
-                collider = collider,
+                collider = thisCollider,
                 otherCollider = collision.collider,
                 contactPoint = collision.contacts[0].point,
                 normal = collision.contacts[0].normal,
