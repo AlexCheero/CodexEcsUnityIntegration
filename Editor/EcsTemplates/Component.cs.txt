@@ -10,6 +10,9 @@ using System.Runtime.CompilerServices;
 [Serializable]
 public struct #SCRIPTNAME# : IComponent
 {
+    /*initial pool size for component. 2 is default*/
+    //public const int InitialPoolSize = 2;
+
     /*init default value here*/
     //public static #SCRIPTNAME# Default
     //{
