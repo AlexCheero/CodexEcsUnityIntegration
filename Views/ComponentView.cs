@@ -1,5 +1,6 @@
 ﻿using CodexECS;
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
@@ -28,11 +29,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     public class ComponentView<T> : BaseComponentView
     {
 #if UNITY_EDITOR
-        [SerializeField]
-        [HideInInspector]
         //this field should go before Component because for some reason if it goes after
         //OnValidate() gets the previous value of Component and thus Component's value can't be changed
-        private T _defaultComponent;
+        private T _initialComponent;
 #endif
 
         public T Component = ComponentMeta<T>.GetDefault();
@@ -40,9 +39,17 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override void AddToWorld(EcsWorld world, int id)
         {
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
-            Component = _defaultComponent;
+            Component = _initialComponent;
 #endif
             world.Add(id, Component);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Awake()
+        {
+            //object spawned from script won't call OnValidate
+            ComponentMeta<T>.Init(ref Component);
+            _initialComponent = Component;
         }
 
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
@@ -75,16 +82,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         //        Owner.OnComponentDisable<T>();
         //}
 
-        void Awake()
-        {
-            //object spawned from script won't call OnValidate
-            _defaultComponent = Component;
-        }
-
         void OnValidate()
         {
             ComponentMeta<T>.Init(ref Component);
-            _defaultComponent = Component;
+            _initialComponent = Component;
             if (_canValidate)
                 Owner.OnComponentValidate(this, Component);
         }
