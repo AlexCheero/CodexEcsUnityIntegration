@@ -21,6 +21,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 collider = thisCollider,
                 otherCollider = hit.collider,
                 contactPoint = hit.point,
+                normal = hit.normal,
                 rb = hit.rigidbody
             };
             if (view.Have<ControllerColliderHitComponent>())
