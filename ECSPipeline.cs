@@ -33,7 +33,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 for (var i = 0; i < systems.Length; i++)
                 {
                     isDirty |= !systems[i].Name.Equals(systems[i].Script.GetClass().FullName);
-                    systems[i].Name = systems[i].Script.GetClass().Name;
+                    systems[i].Name = systems[i].Script.GetClass().FullName;
                 }
                 return isDirty;
             }
