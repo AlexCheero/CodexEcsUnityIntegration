@@ -49,7 +49,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             //object spawned from script won't call OnValidate
             ComponentMeta<T>.Init(ref Component);
+#if UNITY_EDITOR && CODEX_ECS_EDITOR
             _initialComponent = Component;
+#endif
         }
 
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
