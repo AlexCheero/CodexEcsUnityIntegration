@@ -19,7 +19,7 @@ public class #SCRIPTNAME# : EcsSystem
     {
         foreach (var eid in _filter)
         {
-            //world.GetComponent<Comp1>(eid)
+            //world.Get<Comp1>(eid)
             //world.Have<Comp4>(eid)
         }
     }
