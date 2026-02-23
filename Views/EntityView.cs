@@ -89,8 +89,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             var allComponents = GetComponents<Component>();
             var list = new SimpleList<TypeSystemPair>();
-            foreach (var component in allComponents)
+            for (var i = 0; i < allComponents.Length; i++)
             {
+                var component = allComponents[i];
                 if (component is BaseComponentView)
                     continue;
 
@@ -105,8 +106,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                         Component = component
                     });
                     compType = compType.BaseType;
-                }
-                while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) && compType != typeof(Component));
+                } while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) &&
+                         compType != typeof(Component));
             }
 
             return list;
@@ -142,12 +143,23 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
             if (_componentViews == null)
                 Init();
-            
-            foreach (var view in _componentViews)
-                view.AddToWorld(_world, _id);
+
+            for (var i = 0; i < _componentViews.Length; i++)
+                _componentViews[i].AddToWorld(_world, _id);
+
             RegisterUnityComponents(_world);
 
             return _id;
+        }
+
+        public int CreatePureEntity(EcsWorld world)
+        {
+            if (_componentViews == null || _componentViews.Length == 0)
+                _componentViews = GetComponents<BaseComponentView>();
+            var eid = world.Create();
+            for (var i = 0; i < _componentViews.Length; i++)
+                _componentViews[i].AddToWorld(_world, eid);
+            return eid;
         }
         
         private void RegisterUnityComponents(EcsWorld world)
