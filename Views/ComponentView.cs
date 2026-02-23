@@ -39,22 +39,27 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override void AddToWorld(EcsWorld world, int id)
         {
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
-            Component = _initialComponent;
+            if (_isInitialized)
+                Component = _initialComponent;
+            else
 #endif
+            ComponentMeta<T>.Init(ref Component);
             world.Add(id, Component);
         }
         
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Awake()
-        {
-            //object spawned from script won't call OnValidate
-            ComponentMeta<T>.Init(ref Component);
 #if UNITY_EDITOR && CODEX_ECS_EDITOR
+        private bool _isInitialized;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void InitComponent()
+        {
+            ComponentMeta<T>.Init(ref Component);
             _initialComponent = Component;
-#endif
+            _isInitialized = true;
         }
 
-#if UNITY_EDITOR && CODEX_ECS_EDITOR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Awake() => InitComponent(); //object spawned from script won't call OnValidate
+        
         public override void UpdateFromWorld(EcsWorld world, int id)
         {
             if (ComponentMeta<T>.IsTag)
@@ -65,29 +70,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         private bool _canValidate;//hack to validate only after game started and initialized
-        void Start()
-        {
-            _canValidate = true;
-        }
-
-        //TODO this breaks runtime instantiation
-        //void OnEnable()
-        //{
-        //    if (Owner != null)
-        //        Owner.OnComponentEnable(this, Component);
-        //}
-
-        //void OnDisable()
-        //{
-        //    _canValidate = false;
-        //    if (Owner != null)
-        //        Owner.OnComponentDisable<T>();
-        //}
+        void Start() => _canValidate = true;
 
         void OnValidate()
         {
-            ComponentMeta<T>.Init(ref Component);
-            _initialComponent = Component;
+            InitComponent();
             if (_canValidate)
                 Owner.OnComponentValidate(this, Component);
         }

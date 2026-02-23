@@ -158,7 +158,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 _componentViews = GetComponents<BaseComponentView>();
             var eid = world.Create();
             for (var i = 0; i < _componentViews.Length; i++)
-                _componentViews[i].AddToWorld(_world, eid);
+                _componentViews[i].AddToWorld(world, eid);
             return eid;
         }
         
