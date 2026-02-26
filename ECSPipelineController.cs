@@ -27,7 +27,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
             foreach (var pipeline in _pipelines)
             {
-                StartCoroutine(pipeline.Init(_world));
+                pipeline.Init(_world);
                 pipeline.Switch(false);
             }
 

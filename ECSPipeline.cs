@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -106,16 +105,16 @@ namespace CodexFramework.CodexEcsUnityIntegration
             }
         }
 
-        public IEnumerator Init(EcsWorld world)
+        public void Init(EcsWorld world)
         {
             _world = world;
+            var systemCtorParams = new object[] { _world };
 
             _systemToIndexMapping = new();
             _systems = new();
 
-            var systemCtorParams = new object[] { _world };
             foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
-                yield return CreateSystemsByNames(systemCategory, systemCtorParams);
+                CreateSystemsByNames(systemCategory, systemCtorParams);
         }
 
         public void Switch(bool on)
@@ -231,11 +230,11 @@ namespace CodexFramework.CodexEcsUnityIntegration
             }
         }
 
-        private IEnumerator CreateSystemsByNames(ESystemCategory category, object[] systemCtorParams)
+        private void CreateSystemsByNames(ESystemCategory category, object[] systemCtorParams)
         {
             var scripts = GetSystemScriptsByCategory(category);
             if (scripts == null || scripts.Length < 1)
-                yield break;
+                return;
 
             var systems = new EcsSystem[scripts.Length];
 
@@ -244,19 +243,16 @@ namespace CodexFramework.CodexEcsUnityIntegration
             {
                 var systemType = IntegrationHelper.SystemTypes[scripts[i].Name];
                 if (systemType == null)
-                {
-                    Debug.LogError("can't find system type " + scripts[i].Name);
-                    continue;
-                }
+                    throw new Exception("can't find system type " + scripts[i].Name);
                 
-                var creationPredicateInfo =
-                    systemType.GetProperty(EcsSystem.CreationPredicateName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                if (creationPredicateInfo != null && creationPredicateInfo.CanRead)
-                {
-                    var predicate = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), creationPredicateInfo.GetMethod);
-                    while (!predicate())
-                        yield return null;
-                }
+                // var creationPredicateInfo =
+                //     systemType.GetProperty(EcsSystem.CreationPredicateName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                // if (creationPredicateInfo != null && creationPredicateInfo.CanRead)
+                // {
+                //     var predicate = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), creationPredicateInfo.GetMethod);
+                //     while (!predicate())
+                //         yield return null;
+                // }
                 
                 _systemToIndexMapping[category][systemType] = i;
                 systems[i] = (EcsSystem)Activator.CreateInstance(systemType, systemCtorParams);
