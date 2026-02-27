@@ -1,7 +1,6 @@
 using CodexECS;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -69,7 +68,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             _components.Clear();
             foreach (var componentView in GetComponents<BaseComponentView>())
+            {
                 _components.Add(componentView.CreateWrapper());
+                DestroyImmediate(componentView, true);
+            }
         }
 #endif
         
@@ -92,7 +94,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
         private SimpleList<TypeSystemPair> _componentsBuffer;
 
-        private BaseComponentView[] _componentViews;
         private EcsWorld _world;
         private Entity _entity = EntityExtension.NullEntity;
         private int _id = -1;
@@ -131,19 +132,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         //TODO: maybe move to void OnValidate()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Awake() => Init();
-        public void Init()
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Init()
         {
-            if (_componentViews == null || _componentViews.Length == 0)
-                _componentViews = GetComponents<BaseComponentView>();
             if (_componentsBuffer == null || _componentsBuffer.Length == 0)
                 _componentsBuffer = GatherUnityComponents();
-
-#if UNITY_EDITOR && CODEX_ECS_EDITOR
-            _viewsByComponentType ??= _componentViews.ToDictionary(view => view.GetEcsComponentType(), view => view);
-            _typesToCheck ??= new HashSet<Type>(_viewsByComponentType.Keys);
-            _typesBuffer ??= new HashSet<Type>(_viewsByComponentType.Keys);
-#endif
         }
 
         private SimpleList<TypeSystemPair> GatherUnityComponents()
@@ -202,11 +198,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             _id = world.Create();
             _entity = _world.GetById(_id);
 
-            if (_componentViews == null)
+            if (_componentsBuffer == null)
                 Init();
 
-            for (var i = 0; i < _componentViews.Length; i++)
-                _componentViews[i].AddToWorld(_world, _id);
+            for (var i = 0; i < _components.Count; i++)
+                _components[i].AddToWorld(world, _id);
 
             RegisterUnityComponents(_world);
 
@@ -215,11 +211,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int CreatePureEntity(EcsWorld world)
         {
-            if (_componentViews == null || _componentViews.Length == 0)
-                _componentViews = GetComponents<BaseComponentView>();
             var eid = world.Create();
-            for (var i = 0; i < _componentViews.Length; i++)
-                _componentViews[i].AddToWorld(world, eid);
+            for (var i = 0; i < _components.Count; i++)
+                _components[i].AddToWorld(world, eid);
             return eid;
         }
         
@@ -273,88 +267,5 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         public override string ToString() => World.DebugEntity(Id, true);
-
-#if UNITY_EDITOR && CODEX_ECS_EDITOR
-        private bool _validationGuard;//hack to not loose values on inspector update in late update
-        public void OnComponentValidate<T>(BaseComponentView view, T component)
-        {
-            if (_validationGuard)
-                return;
-
-            if (_world == null || !_world.IsEntityValid(_entity))
-                return;
-
-            _viewsByComponentType[typeof(T)] = view;
-            if (!ComponentMeta<T>.IsTag)
-                GetOrAdd<T>() = component;
-        }
-
-        public void OnComponentEnable<T>(BaseComponentView view, T component)
-        {
-            if (_world == null || !_world.IsEntityValid(_entity))
-                return;
-
-            _viewsByComponentType[typeof(T)] = view;
-            if (!ComponentMeta<T>.IsTag)
-                GetOrAdd<T>() = component;
-        }
-
-        public void OnComponentDisable<T>()
-        {
-            if (_world == null || !_world.IsEntityValid(_entity))
-                return;
-
-            if (_viewsByComponentType.ContainsKey(typeof(T)))
-                _viewsByComponentType.Remove(typeof(T));
-            TryRemove<T>();
-        }
-
-        private Dictionary<Type, BaseComponentView> _viewsByComponentType;
-        private HashSet<Type> _typesToCheck;
-        private HashSet<Type> _typesBuffer;
-
-        void LateUpdate()
-        {
-            if (!_updateInspector)
-                return;
-            
-            if (!IsValid)
-                return;
-
-            _world.GetTypesForId(_id, _typesBuffer);
-            foreach (var type in _typesBuffer)
-            {
-                if (!ViewRegistrator.IsTypeHaveView(type))
-                    continue;
-
-                var isComponent = typeof(IComponent).IsAssignableFrom(type);
-                if (!isComponent)
-                    continue;
-
-                if (!_viewsByComponentType.ContainsKey(type))
-                {
-                    var viewType = ViewRegistrator.GetViewTypeByCompType(type);
-                    _validationGuard = true;
-                    _viewsByComponentType[type] = gameObject.GetComponent(viewType) as BaseComponentView;
-                    if (_viewsByComponentType[type] == null)
-                        _viewsByComponentType[type] = gameObject.AddComponent(viewType) as BaseComponentView;
-                    _validationGuard = false;
-                }
-
-                _viewsByComponentType[type].UpdateFromWorld(_world, _id);
-            }
-
-            _typesToCheck.Clear();
-            _typesToCheck.UnionWith(_viewsByComponentType.Keys);
-            _typesToCheck.ExceptWith(_typesBuffer);
-
-            foreach (var type in _typesToCheck)
-            {
-                var viewType = _viewsByComponentType[type].GetType();
-                Destroy(GetComponent(viewType));
-                _viewsByComponentType.Remove(type);
-            }
-        }
-#endif
     }
 }
