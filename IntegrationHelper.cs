@@ -38,7 +38,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     .IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
             
             ComponentTypes = TypeCache.GetTypesDerivedFrom<IComponent>()
-                .Where(t => !t.IsAbstract && !t.IsInterface)
+                .Where(t => !t.IsAbstract && !t.IsInterface && !t.IsGenericType)
                 .OrderBy(t => t.Name)
                 .ToList();
 
