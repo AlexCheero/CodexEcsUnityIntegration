@@ -7,6 +7,38 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
+    [Serializable]
+    public abstract class ComponentWrapper
+    {
+        public abstract void AddToWorld(EcsWorld world, int id);
+        
+#if UNITY_EDITOR
+        public const string ComponentPropertyName = "_component";
+        public abstract void InitFromComponent(IComponent component);
+#endif
+    }
+
+    //TODO: uncomment where T : IComponent and remove ctors when ComponentViews will be deleted
+    [Serializable]
+    public class ComponentWrapper<T> : ComponentWrapper //where T : IComponent
+    {
+        [SerializeField]
+        private T _component;
+
+        public override void AddToWorld(EcsWorld world, int id)
+        {
+            ComponentMeta<T>.Init(ref _component);
+            world.Add(id, _component);
+        }
+
+#if UNITY_EDITOR
+        public ComponentWrapper() {}
+        public ComponentWrapper(T component) => _component = component;
+        
+        public override void InitFromComponent(IComponent component) => _component = (T)component;
+#endif
+    }
+    
     public static class EntityViewExtension
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,13 +69,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             _components.Clear();
             foreach (var componentView in GetComponents<BaseComponentView>())
-                _components.Add(componentView.BoxedComponent);
+                _components.Add(componentView.CreateWrapper());
         }
 #endif
         
         [SerializeReference]
-        private List<IComponent> _components;
-        public IReadOnlyList<IComponent> Components => _components;
+        private List<ComponentWrapper> _components;
+        public IReadOnlyList<ComponentWrapper> Components => _components;
 
         [SerializeField]
         private bool _forceInit;

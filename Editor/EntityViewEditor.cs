@@ -47,18 +47,34 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 for (int i = 0; i < _componentsProp.arraySize; i++)
                 {
                     var element = _componentsProp.GetArrayElementAtIndex(i);
-
                     var obj = element.managedReferenceValue;
-                    var typeName = obj != null ? obj.GetType().Name : "Null";
+
+                    if (obj == null)
+                        continue;
+
+                    var type = obj.GetType();
+                    while (type != null && !type.IsGenericType)
+                        type = type.BaseType;
+                    if (type == null)
+                    {
+                        Debug.LogError("Can't find generic component wrapper base type");
+                        continue;
+                    }
                     
-                    if (!string.IsNullOrEmpty(_componentFilter) && !typeName.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
+                    var componentType = type.GetGenericArguments()[0];
+                    var typeName = componentType.Name;
+
+                    if (!string.IsNullOrEmpty(_componentFilter) &&
+                        !typeName.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
                         continue;
 
                     EditorGUILayout.BeginHorizontal();
 
-                    EditorGUILayout.PropertyField(
-                        element,
-                        new GUIContent(typeName),
+                    var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
+
+                    element.isExpanded = EditorGUILayout.Foldout(
+                        element.isExpanded,
+                        typeName,
                         true
                     );
 
@@ -69,6 +85,28 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     }
 
                     EditorGUILayout.EndHorizontal();
+
+                    if (element.isExpanded && componentProp != null)
+                    {
+                        EditorGUI.indentLevel++;
+
+                        var iterator = componentProp.Copy();
+                        var end = iterator.GetEndProperty();
+
+                        if (iterator.NextVisible(true))
+                        {
+                            do
+                            {
+                                if (SerializedProperty.EqualContents(iterator, end))
+                                    break;
+
+                                EditorGUILayout.PropertyField(iterator, true);
+                            }
+                            while (iterator.NextVisible(false));
+                        }
+
+                        EditorGUI.indentLevel--;
+                    }
                 }
                 
                 EditorGUI.indentLevel--;
@@ -110,10 +148,11 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         var element = _componentsProp.GetArrayElementAtIndex(index);
                         var defaultValueGetter = addableComponentType.GetProperty("Default",
                             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        var viewType = typeof(ComponentWrapper<>).MakeGenericType(addableComponentType);
+                        var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
                         if (defaultValueGetter != null)
-                            element.managedReferenceValue = (IComponent)defaultValueGetter.GetValue(null);
-                        else
-                            element.managedReferenceValue = Activator.CreateInstance(addableComponentType);
+                            wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
+                        element.managedReferenceValue = wrapper;
                     }
 
                     EditorGUILayout.EndHorizontal();
