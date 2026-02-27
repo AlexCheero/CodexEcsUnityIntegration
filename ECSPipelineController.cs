@@ -8,8 +8,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
 {
     public class ECSPipelineController : Singleton<ECSPipelineController>
     {
-        [SerializeField] [Tooltip("Some system ctors could rely on initialization of singletons on the scene")]
-        private bool _waitForSingletonsInit;
         [SerializeField]
         private ECSPipeline[] _pipelines;
 
@@ -28,22 +26,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
             
             _world = new EcsWorld();
 
-            StartCoroutine(WaitForSingletonsAndContinueInit());
-        }
-
-        private IEnumerator WaitForSingletonsAndContinueInit()
-        {
-            if (_waitForSingletonsInit)
-            {
-                var singletons = FindObjectsByType<Singleton>(FindObjectsSortMode.None);
-                for (var i = 0; i < singletons.Length; i++)
-                {
-                    var singleton = singletons[i];
-                    while (!singleton.IsInited)
-                        yield return null;
-                }
-            }
-            
             foreach (var pipeline in _pipelines)
             {
                 pipeline.Init(_world);
