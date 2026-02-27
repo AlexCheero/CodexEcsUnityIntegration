@@ -19,16 +19,27 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         public abstract void AddToWorld(EcsWorld world, int id);
-
-#if UNITY_EDITOR && CODEX_ECS_EDITOR
+        
+#if UNITY_EDITOR
+        public abstract IComponent BoxedComponent { get; }
+        
+#if CODEX_ECS_EDITOR
         public abstract Type GetEcsComponentType();
         public abstract void UpdateFromWorld(EcsWorld world, int id);
+#endif
+        
 #endif
     }
 
     public class ComponentView<T> : BaseComponentView
     {
 #if UNITY_EDITOR
+        public override IComponent BoxedComponent
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (IComponent)Component;
+        }
+        
         //this field should go before Component because for some reason if it goes after
         //OnValidate() gets the previous value of Component and thus Component's value can't be changed
         private T _initialComponent;

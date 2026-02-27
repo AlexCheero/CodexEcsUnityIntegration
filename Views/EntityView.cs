@@ -18,11 +18,40 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #if UNITY_EDITOR
         [SerializeField]
         private bool _updateInspector;
+        
+        public const string ComponentsPropertyName = nameof(_components);
+        public const string ForceInitPropertyName = nameof(_forceInit);
+        public const string UpdateInspectorPropertyName = nameof(_updateInspector);
+        
+        void OnValidate()
+        {
+            for (int i = _components.Count - 1; i > -1; i--)
+            {
+                if (_components[i] == null)
+                    _components.RemoveAt(i);
+            }
+        }
+
+        [ContextMenu(nameof(GatherComponentsFromViews))]
+        public void GatherComponentsFromViews()
+        {
+            _components.Clear();
+            foreach (var componentView in GetComponents<BaseComponentView>())
+                _components.Add(componentView.BoxedComponent);
+        }
 #endif
         
+        [SerializeReference]
+        private List<IComponent> _components;
+        public IReadOnlyList<IComponent> Components => _components;
+
         [SerializeField]
         private bool _forceInit;
-        public bool ForceInit => _forceInit;
+        public bool ForceInit
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _forceInit;
+        }
 
         private struct TypeSystemPair
         {

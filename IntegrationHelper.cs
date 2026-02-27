@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using UnityEditor;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
@@ -28,12 +29,18 @@ namespace CodexFramework.CodexEcsUnityIntegration
     public static class IntegrationHelper
     {
         public static Dictionary<string, Type> SystemTypes;
+        public static List<Type> ComponentTypes;
 
         static IntegrationHelper()
         {
             SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
                 .Where((type) => type != typeof(EcsSystem) && !type.IsGenericType && typeof(EcsSystem)
                     .IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
+            
+            ComponentTypes = TypeCache.GetTypesDerivedFrom<IComponent>()
+                .Where(t => !t.IsAbstract && !t.IsInterface)
+                .OrderBy(t => t.Name)
+                .ToList();
 
             SystemCategories = (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory));
         }
