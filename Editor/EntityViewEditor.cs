@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using CodexECS;
 using CodexFramework.CodexEcsUnityIntegration;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEditor;
@@ -106,8 +108,12 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         _componentsProp.InsertArrayElementAtIndex(index);
 
                         var element = _componentsProp.GetArrayElementAtIndex(index);
-                        element.managedReferenceValue = Activator.CreateInstance(addableComponentType);
-
+                        var defaultValueGetter = addableComponentType.GetProperty("Default",
+                            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (defaultValueGetter != null)
+                            element.managedReferenceValue = (IComponent)defaultValueGetter.GetValue(null);
+                        else
+                            element.managedReferenceValue = Activator.CreateInstance(addableComponentType);
                     }
 
                     EditorGUILayout.EndHorizontal();
