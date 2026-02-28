@@ -1,6 +1,7 @@
 using System;
 using CodexECS;
 using System.Runtime.CompilerServices;
+using CodexFramework.CodexEcsUnityIntegration.Views;
 
 //Move this to separate file with name #SCRIPTNAME#View.cs to be able to assign it to game object
 //using UnityEngine;
@@ -10,6 +11,9 @@ using System.Runtime.CompilerServices;
 [Serializable]
 public struct #SCRIPTNAME# : IComponent
 {
+    //needed to prevent stripping wrappers from build
+    public static readonly Type WrapperType = typeof(ComponentWrapper<#SCRIPTNAME#>);
+
     /*initial pool size for component. 2 is default*/
     //public const int InitialPoolSize = 2;
 
