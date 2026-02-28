@@ -16,10 +16,10 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private SerializedProperty _forceInitProp;
         private SerializedProperty _updateInspectorProp;
 
-        private bool _addListExpanded;
-        private bool _showComponents;
-        private string _addFilter;
-        private string _componentFilter;
+        private static bool _addListExpanded;
+        private static bool _showComponents;
+        private static string _addFilter;
+        private static string _componentFilter;
         
         private void OnEnable()
         {
