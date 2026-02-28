@@ -13,8 +13,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             for (int i = 0; i < stream.length; i++)
             {
-                // if (stream.GetEventType(i) != ObjectChangeKind.ChangeGameObjectStructure)
-                //     continue;
+                if (stream.GetEventType(i) != ObjectChangeKind.ChangeGameObjectStructure)
+                    continue;
 
                 stream.GetChangeGameObjectStructureEvent(i, out var change);
                 var obj = EditorUtility.InstanceIDToObject(change.instanceId);
