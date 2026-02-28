@@ -150,17 +150,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             get => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity);
         }
 
-        //TODO: maybe move to void OnValidate()
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Awake() => Init();
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Init()
-        {
-            if (_unityComponentsBuffer == null || _unityComponentsBuffer.Length == 0)
-                _unityComponentsBuffer = GatherUnityComponents();
-        }
-
         private SimpleList<TypeComponentPair> GatherUnityComponents()
         {
             var allComponents = GetComponents<Component>();
@@ -169,6 +158,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             {
                 var component = allComponents[i];
                 var compType = component.GetType();
+                if (compType == typeof(EntityView))
+                    continue;
+                
                 do
                 {
                     if (!ComponentMapping.HaveType(compType))
@@ -214,9 +206,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             _id = world.Create();
             _entity = _world.GetById(_id);
 
-            if (_unityComponentsBuffer == null)
-                Init();
-
             for (var i = 0; i < _components.Count; i++)
                 _components[i].AddToWorld(world, _id);
 
@@ -235,6 +224,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
         private void RegisterUnityComponents(EcsWorld world)
         {
+            if (_unityComponentsBuffer == null || _unityComponentsBuffer.Length == 0)
+                _unityComponentsBuffer = GatherUnityComponents();
             for (int i = 0; i < _unityComponentsBuffer.Length; i++)
             {
                 ref readonly var componentTuple = ref _unityComponentsBuffer[i];
