@@ -212,6 +212,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TryRemove<T>() => _world.TryRemove<T>(_id);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref readonly BitMask GetMask() => ref _world.GetMask(_id);
 
         public void DeleteFromWorld()
         {
