@@ -14,7 +14,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
     {
         private SerializedProperty _componentsProp;
         private SerializedProperty _forceInitProp;
-        private SerializedProperty _updateInspectorProp;
 
         private static bool _addListExpanded;
         private static bool _showComponents;
@@ -25,7 +24,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         {
             _componentsProp = serializedObject.FindProperty(EntityView.ComponentsPropertyName);
             _forceInitProp = serializedObject.FindProperty(EntityView.ForceInitPropertyName);
-            _updateInspectorProp = serializedObject.FindProperty(EntityView.UpdateInspectorPropertyName);
         }
 
         public override void OnInspectorGUI()
@@ -34,7 +32,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(_forceInitProp);
-            EditorGUILayout.PropertyField(_updateInspectorProp);
             
             _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
             if (_showComponents)
@@ -71,12 +68,18 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     EditorGUILayout.BeginHorizontal();
 
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
-
-                    EditorGUILayout.PropertyField(
-                        componentProp,
-                        new GUIContent(typeName),
-                        true
-                    );
+                    if (componentProp != null)
+                    {
+                        EditorGUILayout.PropertyField(
+                            componentProp,
+                            new GUIContent(typeName),
+                            true
+                        );
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(typeName);
+                    }
 
                     if (GUILayout.Button("-", GUILayout.Width(20)))
                     {

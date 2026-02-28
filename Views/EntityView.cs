@@ -51,19 +51,28 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     public class EntityView : MonoBehaviour
     {
 #if UNITY_EDITOR
-        [SerializeField]
-        private bool _updateInspector;
-        
         public const string ComponentsPropertyName = nameof(_components);
         public const string ForceInitPropertyName = nameof(_forceInit);
-        public const string UpdateInspectorPropertyName = nameof(_updateInspector);
-        
-        void OnValidate()
+
+        [ContextMenu(nameof(RebuildUnityComponentsCache))]
+        public void RebuildUnityComponentsCache()
         {
-            for (int i = _components.Count - 1; i > -1; i--)
+            var allComponents = GetComponents<Component>();
+            _unityComponentsBuffer = new List<Component>(allComponents.Length);
+            for (var i = 0; i < allComponents.Length; i++)
             {
-                if (_components[i] == null)
-                    _components.RemoveAt(i);
+                var component = allComponents[i];
+                var compType = component.GetType();
+                //TODO: uncomment when remove all the EntityView references
+                //if (compType == typeof(EntityView))
+                //    continue;
+                
+                while (compType != null && compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) &&
+                       compType != typeof(Component))
+                {
+                    _unityComponentsBuffer.Add(component);
+                    compType = compType.BaseType;
+                }
             }
         }
 #endif
@@ -74,7 +83,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
         private Dictionary<Type, ComponentWrapper> _componentsMap;
 
-        public bool TryGetComponentValue<T>(out T result) where T : IComponent
+        public bool TryGetComponentDefaultValue<T>(out T result) where T : IComponent
         {
             result = default;
             var targetType = typeof(T);
@@ -106,12 +115,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             get => _forceInit;
         }
 
-        private struct TypeComponentPair
-        {
-            public Type Type;
-            public Component Component;
-        }
-        private SimpleList<TypeComponentPair> _unityComponentsBuffer;
+        [SerializeField]
+        private List<Component> _unityComponentsBuffer;
 
         private EcsWorld _world;
         private Entity _entity = EntityExtension.NullEntity;
@@ -149,33 +154,29 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _world != null && _id == _entity.GetId() && _world.IsEntityValid(_entity);
         }
-
-        private SimpleList<TypeComponentPair> GatherUnityComponents()
+        
+        private void RegisterUnityComponents(EcsWorld world)
         {
-            var allComponents = GetComponents<Component>();
-            var list = new SimpleList<TypeComponentPair>();
-            for (var i = 0; i < allComponents.Length; i++)
-            {
-                var component = allComponents[i];
-                var compType = component.GetType();
-                if (compType == typeof(EntityView))
-                    continue;
-                
-                do
-                {
-                    if (!ComponentMapping.HaveType(compType))
-                        CallStaticCtorForComponentMeta(compType);
-                    list.Add(new TypeComponentPair
-                    {
-                        Type = compType,
-                        Component = component
-                    });
-                    compType = compType.BaseType;
-                } while (compType != typeof(MonoBehaviour) && compType != typeof(Behaviour) &&
-                         compType != typeof(Component));
-            }
+            //it should have at least Transform
+            // if (_unityComponentsBuffer.Count == 0)
+            //     return;
 
-            return list;
+            var component = _unityComponentsBuffer[0];
+            var type = component.GetType();
+            if (!ComponentMapping.HaveType(type))
+                CallStaticCtorForComponentMeta(type);
+            world.AddMultiple_Dynamic(type, _id, component);
+            
+            for (int i = 1; i < _unityComponentsBuffer.Count; i++)
+            {
+                component = _unityComponentsBuffer[i];
+                type = _unityComponentsBuffer[i - 1] == component
+                    ? type.BaseType
+                    : _unityComponentsBuffer[i].GetType();
+                if (!ComponentMapping.HaveType(type))
+                    CallStaticCtorForComponentMeta(type);
+                world.AddMultiple_Dynamic(type, _id, component);
+            }
         }
 
         private void CallStaticCtorForComponentMeta(Type type)
@@ -220,17 +221,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             for (var i = 0; i < _components.Count; i++)
                 _components[i].AddToWorld(world, eid);
             return eid;
-        }
-        
-        private void RegisterUnityComponents(EcsWorld world)
-        {
-            if (_unityComponentsBuffer == null || _unityComponentsBuffer.Length == 0)
-                _unityComponentsBuffer = GatherUnityComponents();
-            for (int i = 0; i < _unityComponentsBuffer.Length; i++)
-            {
-                ref readonly var componentTuple = ref _unityComponentsBuffer[i];
-                world.AddMultiple_Dynamic(componentTuple.Type, _id, componentTuple.Component);
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
