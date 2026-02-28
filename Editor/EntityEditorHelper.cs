@@ -16,6 +16,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private static bool _showComponents;
         private static string _addFilter;
         private static string _componentFilter;
+        private static GUIContent _componentGUIContent = new();
         
         public static void DrawComponentsInspector(SerializedProperty componentsProp, IReadOnlyList<ComponentWrapper> addedComponents)
         {
@@ -56,11 +57,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
                     if (componentProp != null)
                     {
-                        EditorGUILayout.PropertyField(
-                            componentProp,
-                            new GUIContent(typeName),
-                            true
-                        );
+                        _componentGUIContent.text = typeName;
+                        EditorGUILayout.PropertyField(componentProp, _componentGUIContent, true);
                     }
                     else
                     {
