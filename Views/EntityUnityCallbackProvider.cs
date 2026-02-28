@@ -9,7 +9,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [SerializeField]
         protected Collider thisCollider;
         [SerializeField]
-        public EntityView view;
+        protected EntityView view;
         
 #if UNITY_EDITOR
         private void OnValidate()
