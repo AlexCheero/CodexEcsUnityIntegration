@@ -18,9 +18,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #endif
     }
 
-    //TODO: uncomment where T : IComponent and remove ctors when ComponentViews will be deleted
     [Serializable]
-    public class ComponentWrapper<T> : ComponentWrapper //where T : IComponent
+    public class ComponentWrapper<T> : ComponentWrapper where T : IComponent
     {
         [SerializeField]
         private T _component;
@@ -39,9 +38,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override Type GetComponentType() => typeof(T);
 
 #if UNITY_EDITOR
-        public ComponentWrapper() {}
-        public ComponentWrapper(T component) => _component = component;
-        
         public override void InitFromComponent(IComponent component) => _component = (T)component;
 #endif
     }
