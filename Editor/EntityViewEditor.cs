@@ -72,9 +72,9 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
 
-                    element.isExpanded = EditorGUILayout.Foldout(
-                        element.isExpanded,
-                        typeName,
+                    EditorGUILayout.PropertyField(
+                        componentProp,
+                        new GUIContent(typeName),
                         true
                     );
 
@@ -85,28 +85,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     }
 
                     EditorGUILayout.EndHorizontal();
-
-                    if (element.isExpanded && componentProp != null)
-                    {
-                        EditorGUI.indentLevel++;
-
-                        var iterator = componentProp.Copy();
-                        var end = iterator.GetEndProperty();
-
-                        if (iterator.NextVisible(true))
-                        {
-                            do
-                            {
-                                if (SerializedProperty.EqualContents(iterator, end))
-                                    break;
-
-                                EditorGUILayout.PropertyField(iterator, true);
-                            }
-                            while (iterator.NextVisible(false));
-                        }
-
-                        EditorGUI.indentLevel--;
-                    }
                 }
                 
                 EditorGUI.indentLevel--;
