@@ -13,7 +13,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
 #if UNITY_EDITOR
         public const string ComponentPropertyName = "_component";
+        public bool IsExpanded;
+        
         public abstract void InitFromComponent(IComponent component);
+        public abstract void ReadFromWorld(EcsWorld world, int eid);
+        public abstract void WriteToWorld(EcsWorld world, int eid);
 #endif
     }
     
@@ -38,6 +42,18 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
 #if UNITY_EDITOR
         public override void InitFromComponent(IComponent component) => _component = (T)component;
+
+        public override void ReadFromWorld(EcsWorld world, int eid)
+        {
+            if (!ComponentMeta<T>.IsTag)
+                _component = world.Get<T>(eid);
+        }
+
+        public override void WriteToWorld(EcsWorld world, int eid)
+        {
+            if (!ComponentMeta<T>.IsTag)
+                world.Get<T>(eid) = _component;
+        }
 #endif
     }
 }
