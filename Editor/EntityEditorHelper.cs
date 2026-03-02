@@ -246,7 +246,13 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 
                 if (GUILayout.Button("-", GUILayout.Width(20)))
                 {
-                    //componentsProp.DeleteArrayElementAtIndex(i);
+                    var methodDefinition = typeof(EntityView)
+                        .GetMethod(nameof(EntityView.Remove), BindingFlags.Public | BindingFlags.Instance)
+                        ?.MakeGenericMethod(_onlineBuffer[i]);
+
+                    if (methodDefinition != null)
+                        methodDefinition.Invoke(view, null);
+                    
                     break;
                 }
                 
