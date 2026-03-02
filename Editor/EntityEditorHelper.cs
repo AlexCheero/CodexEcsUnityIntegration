@@ -182,8 +182,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     }
                     
                     var addableComponentType = componentTypes[i];
-                    // if (addedComponents != null && addedComponents.Any(c => c.GetType() == addableComponentType))
-                    //     continue;
+                    if (_onlineBuffer.Any(c => c == addableComponentType))
+                        continue;
                     
                     EditorGUILayout.BeginHorizontal("box");
 
