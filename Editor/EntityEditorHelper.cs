@@ -189,20 +189,15 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                     EditorGUILayout.LabelField(addableComponentType.Name);
 
-                    // if (GUILayout.Button("+", GUILayout.Width(25)))
-                    // {
-                    //     var index = componentsProp.arraySize;
-                    //     componentsProp.InsertArrayElementAtIndex(index);
-                    //
-                    //     var element = componentsProp.GetArrayElementAtIndex(index);
-                    //     var defaultValueGetter = addableComponentType.GetProperty("Default",
-                    //         BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    //     var viewType = typeof(ComponentWrapper<>).MakeGenericType(addableComponentType);
-                    //     var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
-                    //     if (defaultValueGetter != null)
-                    //         wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
-                    //     element.managedReferenceValue = wrapper;
-                    // }
+                    if (GUILayout.Button("+", GUILayout.Width(25)))
+                    {
+                        var methodDefinition = typeof(EntityView)
+                            .GetMethod(nameof(EntityView.AddInspector), BindingFlags.Public | BindingFlags.Instance)
+                            ?.MakeGenericMethod(componentTypes[i]);
+
+                        if (methodDefinition != null)
+                            methodDefinition.Invoke(view, null);
+                    }
 
                     EditorGUILayout.EndHorizontal();
                 }

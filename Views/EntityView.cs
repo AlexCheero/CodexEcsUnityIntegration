@@ -38,6 +38,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 }
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddInspector<T>() => Add<T>();
 #endif
         
         [SerializeReference]
