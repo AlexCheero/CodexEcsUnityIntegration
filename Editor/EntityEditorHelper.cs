@@ -34,7 +34,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             _serializedProxies.Clear();
         }
 
-        private static readonly List<(string, SerializedProperty)> _offlineBuffer = new();
+        private static readonly List<(string, int, SerializedProperty)> _offlineBuffer = new();
         public static void DrawComponentsInspector(SerializedProperty componentsProp, IReadOnlyList<ComponentWrapper> addedComponents)
         {
             _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
@@ -71,7 +71,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         continue;
                     
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
-                    _offlineBuffer.Add((typeName, componentProp));
+                    _offlineBuffer.Add((typeName, i, componentProp));
                 }
 
                 _offlineBuffer.Sort((p1, p2) =>
@@ -80,7 +80,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 {
                     EditorGUILayout.BeginHorizontal();
                     
-                    var (typeName, componentProp) = _offlineBuffer[i];
+                    var (typeName, j, componentProp) = _offlineBuffer[i];
                     if (componentProp != null)
                     {
                         _componentGUIContent.text = typeName;
@@ -93,7 +93,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     
                     if (GUILayout.Button("-", GUILayout.Width(20)))
                     {
-                        componentsProp.DeleteArrayElementAtIndex(i);
+                        componentsProp.DeleteArrayElementAtIndex(j);
                         break;
                     }
                     
@@ -123,7 +123,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     }
                     
                     var addableComponentType = componentTypes[i];
-                    if (addedComponents != null && addedComponents.Any(c => c.GetType() == addableComponentType))
+                    if (addedComponents != null && addedComponents.Any(c => c.GetComponentType() == addableComponentType))
                         continue;
                     
                     EditorGUILayout.BeginHorizontal("box");
@@ -247,6 +247,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                     if (methodDefinition != null)
                         methodDefinition.Invoke(view, null);
+
+                    _onlineBuffer.RemoveAt(i);
                     
                     break;
                 }

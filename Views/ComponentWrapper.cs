@@ -13,6 +13,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
 #if UNITY_EDITOR
         public const string ComponentPropertyName = "_component";
+        
+        [HideInInspector]
         public bool IsExpanded;
         
         public abstract void InitFromComponent(IComponent component);
