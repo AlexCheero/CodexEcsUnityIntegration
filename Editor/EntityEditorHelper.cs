@@ -235,7 +235,23 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             
             _onlineBuffer.Sort((t1, t2) => string.Compare(t1.Name, t2.Name, StringComparison.Ordinal));
             for (int i = 0; i < _onlineBuffer.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                
+                EditorGUILayout.BeginVertical();
+                
                 DrawRuntimeComponent(world, entityId, _onlineBuffer[i]);
+                
+                EditorGUILayout.EndVertical();
+                
+                if (GUILayout.Button("-", GUILayout.Width(20)))
+                {
+                    //componentsProp.DeleteArrayElementAtIndex(i);
+                    break;
+                }
+                
+                EditorGUILayout.EndHorizontal();
+            }
             
             EditorGUI.indentLevel--;
         }
@@ -264,8 +280,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             var so = _serializedProxies[componentType];
             so.Update();
 
-            EditorGUILayout.Space();
-            
             var fields = componentType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             var isTag = fields.Length == 0 && componentType.IsValueType && !componentType.IsEnum;
             if (isTag)
@@ -277,6 +291,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 proxy.Value.IsExpanded = EditorGUILayout.Foldout(proxy.Value.IsExpanded, componentType.Name, true);
                 if (proxy.Value.IsExpanded)
                 {
+                    EditorGUI.indentLevel++;
                     EditorGUI.BeginChangeCheck();
 
                     // Находим поле Value (wrapper)
@@ -294,6 +309,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         so.ApplyModifiedProperties();
                         proxy.Value.WriteToWorld(world, entityId);
                     }
+                    
+                    EditorGUI.indentLevel--;
                 }
             }
         }
