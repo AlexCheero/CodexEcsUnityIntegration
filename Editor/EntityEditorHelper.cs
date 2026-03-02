@@ -33,12 +33,14 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             _proxies.Clear();
             _serializedProxies.Clear();
         }
-        
+
+        private static readonly List<(string, SerializedProperty)> _offlineBuffer = new();
         public static void DrawComponentsInspector(SerializedProperty componentsProp, IReadOnlyList<ComponentWrapper> addedComponents)
         {
             _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
             if (_showComponents)
             {
+                _offlineBuffer.Clear();
                 _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
                 EditorGUILayout.Space();
                 
@@ -67,10 +69,18 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     if (!string.IsNullOrEmpty(_componentFilter) &&
                         !typeName.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
                         continue;
-
-                    EditorGUILayout.BeginHorizontal();
-
+                    
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
+                    _offlineBuffer.Add((typeName, componentProp));
+                }
+
+                _offlineBuffer.Sort((p1, p2) =>
+                    string.Compare(p1.Item1, p2.Item1, StringComparison.Ordinal));
+                for (int i = 0; i < _offlineBuffer.Count; i++)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    
+                    var (typeName, componentProp) = _offlineBuffer[i];
                     if (componentProp != null)
                     {
                         _componentGUIContent.text = typeName;
@@ -80,13 +90,13 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     {
                         EditorGUILayout.LabelField(typeName);
                     }
-
+                    
                     if (GUILayout.Button("-", GUILayout.Width(20)))
                     {
                         componentsProp.DeleteArrayElementAtIndex(i);
                         break;
                     }
-
+                    
                     EditorGUILayout.EndHorizontal();
                 }
                 
@@ -200,12 +210,15 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 EditorGUI.indentLevel--;
             }
         }
-        
-        public static void DrawRuntimeComponents(EntityView view)
+
+        private static List<Type> _onlineBuffer = new();
+        private static void DrawRuntimeComponents(EntityView view)
         {
             var world = view.World;
             var entityId = view.Id;
 
+            _onlineBuffer.Clear();
+            
             EditorGUI.indentLevel++;
             foreach (var componentId in view.GetMask())
             {
@@ -215,10 +228,15 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 {
                     continue;
                 }
-                
+
                 if (typeof(IComponent).IsAssignableFrom(componentType))
-                    DrawRuntimeComponent(world, entityId, ComponentMapping.GetTypeForId(componentId));
+                    _onlineBuffer.Add(ComponentMapping.GetTypeForId(componentId));
             }
+            
+            _onlineBuffer.Sort((t1, t2) => string.Compare(t1.Name, t2.Name, StringComparison.Ordinal));
+            for (int i = 0; i < _onlineBuffer.Count; i++)
+                DrawRuntimeComponent(world, entityId, _onlineBuffer[i]);
+            
             EditorGUI.indentLevel--;
         }
 
