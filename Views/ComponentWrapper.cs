@@ -53,8 +53,10 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public override void WriteToWorld(EcsWorld world, int eid)
         {
-            if (!ComponentMeta<T>.IsTag)
-                world.Get<T>(eid) = _component;
+            if (ComponentMeta<T>.IsTag)
+                return;
+            ComponentMeta<T>.Init(ref _component);
+            world.Get<T>(eid) = _component;
         }
 #endif
     }

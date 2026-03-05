@@ -84,7 +84,25 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     if (componentProp != null)
                     {
                         _componentGUIContent.text = typeName;
+                        
+                        EditorGUI.BeginChangeCheck();
+                        
                         EditorGUILayout.PropertyField(componentProp, _componentGUIContent, true);
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            var componentType = componentProp.boxedValue.GetType();
+                            var initMethod = componentType.GetMethod(
+                                "Init",
+                                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                            );
+                            if (initMethod != null)
+                            {
+                                object[] args = { componentProp.boxedValue };
+                                initMethod.Invoke(null, args);
+                                componentProp.boxedValue = args[0];
+                            }
+                        }
                     }
                     else
                     {
