@@ -41,6 +41,15 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddInspector<T>() => Add<T>();
+
+        private void OnValidate()
+        {
+            for (int i = _components.Count - 1; i >= 0; i--)
+            {
+                if (_components[i] == null)
+                    _components.RemoveAt(i);
+            }
+        }
 #endif
         
         [SerializeReference]
