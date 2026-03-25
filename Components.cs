@@ -76,4 +76,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Tags
     {
         public static readonly Type WrapperType = typeof(ComponentWrapper<OverrideTriggerExit>);
     }
+    
+    public struct PureEntity : IComponent
+    {
+        public static readonly Type WrapperType = typeof(ComponentWrapper<PureEntity>);
+    }
 }
