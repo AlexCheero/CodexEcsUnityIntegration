@@ -2,14 +2,14 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using UnityEditor;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
     public class SystemAttribute : Attribute
     {
-        public ESystemCategory Categories;
+        public readonly ESystemCategory Categories;
         public SystemAttribute(ESystemCategory categories) => Categories = categories;
     }
 
@@ -28,19 +28,37 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
     public static class IntegrationHelper
     {
-        public static Dictionary<string, Type> SystemTypes;
-        public static List<Type> ComponentTypes;
-
+        public static readonly Dictionary<string, Type> SystemTypes;
+        
+#if UNITY_EDITOR
+        public static readonly List<Type> ComponentTypes;
+#endif
+        
         static IntegrationHelper()
         {
-            SystemTypes = typeof(ECSPipeline).Assembly.GetTypes()
-                .Where((type) => type != typeof(EcsSystem) && !type.IsGenericType && typeof(EcsSystem)
-                    .IsAssignableFrom(type)).ToDictionary(t => t.FullName, t => t);
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var allTypes = assemblies.SelectMany(assembly =>
+            {
+                try
+                {
+                    return assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException e)
+                {
+                    return e.Types.Where(t => t != null);
+                }
+            }).Where(t => !t.IsAbstract && !t.IsInterface && !t.IsGenericType);
             
-            ComponentTypes = TypeCache.GetTypesDerivedFrom<IComponent>()
-                .Where(t => !t.IsAbstract && !t.IsInterface && !t.IsGenericType)
+            SystemTypes = allTypes
+                .Where(t => typeof(EcsSystem).IsAssignableFrom(t) && t != typeof(EcsSystem))
+                .ToDictionary(t => t.FullName, t => t);
+            
+#if UNITY_EDITOR
+            ComponentTypes = allTypes
+                .Where(t => typeof(IComponent).IsAssignableFrom(t))
                 .OrderBy(t => t.Name)
                 .ToList();
+#endif
 
             SystemCategories = (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory));
         }
