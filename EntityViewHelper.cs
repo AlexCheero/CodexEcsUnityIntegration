@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using CodexECS;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
@@ -15,24 +16,49 @@ namespace CodexFramework.CodexEcsUnityIntegration
             return instance;
         }
 
-        public static EntityView GetOwnerEntityView(GameObject go)
+        public static bool GetOwnerEntityView(this GameObject go, out EntityView view)
         {
-            if (go.TryGetComponent<EntityView>(out var view))
-                return view;
-            if (go.TryGetComponent<EntityViewChild>(out var viewChild))
-                view = viewChild.OwnerView;
+            view = null;
+            if (go == null)
+                return false;
 
-            return view;
+            if (go.TryGetComponent<EntityView>(out var entityView))
+            {
+                view = entityView;
+                return true;
+            }
+            
+            if (!go.TryGetComponent<EntityViewChild>(out var viewChild))
+                return false;
+            
+            view = viewChild.OwnerView;
+            return view != null;
         }
 
-        public static EntityView GetOwnerEntityView(Component component)
+        public static bool GetOwnerEntityView(this Component component, out EntityView view)
         {
-            if (component.TryGetComponent<EntityView>(out var view))
-                return view;
-            if (component.TryGetComponent<EntityViewChild>(out var viewChild))
-                view = viewChild.OwnerView;
+            view = null;
+            if (component == null)
+                return false;
 
-            return view;
+            if (component.TryGetComponent<EntityView>(out var entityView))
+            {
+                view = entityView;
+                return true;
+            }
+
+            if (!component.TryGetComponent<EntityViewChild>(out var viewChild))
+                return false;
+            
+            view = viewChild.OwnerView;
+            return view != null;
+
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetValidOwnerEntityView(this GameObject go, out EntityView view) => go.GetOwnerEntityView(out view) && view.IsValid;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetValidOwnerEntityView(this Component component, out EntityView view) => component.GetOwnerEntityView(out view) && view.IsValid;
     }
 }

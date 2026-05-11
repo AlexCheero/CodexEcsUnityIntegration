@@ -14,9 +14,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (view == null)
-                view = EntityViewHelper.GetOwnerEntityView(gameObject);
-            if (view == null)
+            if (view == null && !gameObject.GetOwnerEntityView(out view))
                 Debug.LogError($"{name} EntityUnityCallbackProvider have no view");
             
             if (thisCollider == null)
