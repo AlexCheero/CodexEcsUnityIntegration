@@ -5,11 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
-
     //TODO: add fields to init EcsCacheSettings
     public class ECSPipeline : MonoBehaviour
     {
@@ -27,6 +25,16 @@ namespace CodexFramework.CodexEcsUnityIntegration
 #if UNITY_EDITOR
         void OnValidate()
         {
+            bool InvalidEntryPredicate(SystemEntry entry) => entry.Script == null;
+            Utils.RemoveEntries(ref _initSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _updateSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _lateUpdateSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _fixedUpdateSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _lateFixedUpdateSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _enableSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _disableSystemScripts, InvalidEntryPredicate);
+            Utils.RemoveEntries(ref _reactiveSystemScripts, InvalidEntryPredicate);
+            
             bool SynchScriptsWithTypeNames(SystemEntry[] systems)
             {
                 var isDirty = false;
