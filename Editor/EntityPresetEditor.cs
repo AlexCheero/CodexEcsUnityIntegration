@@ -2,16 +2,16 @@
 
 namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 {
-    [CustomEditor(typeof(EntitySO))]
-    public class EntitySOEditor : UnityEditor.Editor
+    [CustomEditor(typeof(EntityPreset))]
+    public class EntityPresetEditor : UnityEditor.Editor
     {
         private SerializedProperty _componentsProp;
         
-        private void OnEnable() => _componentsProp = serializedObject.FindProperty(EntitySO.ComponentsPropertyName);
+        private void OnEnable() => _componentsProp = serializedObject.FindProperty(EntityPreset.ComponentsPropertyName);
 
         public override void OnInspectorGUI()
         {
-            var so = (EntitySO)target;
+            var so = (EntityPreset)target;
             serializedObject.Update();
 
             EntityEditorHelper.DrawComponentsInspector(_componentsProp, so.Components);

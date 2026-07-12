@@ -3,8 +3,8 @@ using CodexECS;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EntitySO", menuName = "ECS/New EntitySO")]
-public class EntitySO : ScriptableObject
+[CreateAssetMenu(fileName = "EntityPreset", menuName = "ECS/New EntityPreset")]
+public class EntityPreset : ScriptableObject
 {
 #if UNITY_EDITOR
     public const string ComponentsPropertyName = nameof(_components);
