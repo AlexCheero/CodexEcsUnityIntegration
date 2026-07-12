@@ -34,7 +34,10 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             _serializedProxies.Clear();
         }
 
-        private static readonly List<(string, int, SerializedProperty)> _offlineBuffer = new();
+        private static readonly List<(string TypeName, int Index, Type ComponentType, SerializedProperty ComponentProp)> _offlineBuffer = new();
+        private static readonly Dictionary<string, bool> _offlineFoldouts = new();
+        private static readonly Dictionary<Type, bool> _hasSerializableFieldsCache = new();
+
         public static void DrawComponentsInspector(SerializedProperty componentsProp, IReadOnlyList<ComponentWrapper> addedComponents)
         {
             _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
@@ -71,38 +74,50 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         continue;
                     
                     var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
-                    _offlineBuffer.Add((typeName, i, componentProp));
+                    _offlineBuffer.Add((typeName, i, componentType, componentProp));
                 }
 
                 _offlineBuffer.Sort((p1, p2) =>
-                    string.Compare(p1.Item1, p2.Item1, StringComparison.Ordinal));
+                    string.Compare(p1.TypeName, p2.TypeName, StringComparison.Ordinal));
                 for (int i = 0; i < _offlineBuffer.Count; i++)
                 {
                     EditorGUILayout.BeginHorizontal();
                     
-                    var (typeName, j, componentProp) = _offlineBuffer[i];
-                    if (componentProp != null)
+                    var (typeName, j, componentType, componentProp) = _offlineBuffer[i];
+                    // Never PropertyField the whole _component: non-serializable fields (HashSet,
+                    // Dictionary, …) under SerializeReference spam managed-reference errors.
+                    // Draw only Unity-serializable children, or a label for tag-like components.
+                    if (componentProp != null && HasUnitySerializableFields(componentType))
                     {
-                        _componentGUIContent.text = typeName;
-                        
-                        EditorGUI.BeginChangeCheck();
-                        
-                        EditorGUILayout.PropertyField(componentProp, _componentGUIContent, true);
+                        EditorGUILayout.BeginVertical();
 
-                        if (EditorGUI.EndChangeCheck())
+                        if (!_offlineFoldouts.TryGetValue(typeName, out var expanded))
+                            expanded = true;
+                        expanded = EditorGUILayout.Foldout(expanded, typeName, true);
+                        _offlineFoldouts[typeName] = expanded;
+
+                        if (expanded)
                         {
-                            var componentType = componentProp.boxedValue.GetType();
-                            var initMethod = componentType.GetMethod(
-                                "Init",
-                                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-                            );
-                            if (initMethod != null)
+                            EditorGUI.indentLevel++;
+                            EditorGUI.BeginChangeCheck();
+                            DrawChildren(componentProp);
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                object[] args = { componentProp.boxedValue };
-                                initMethod.Invoke(null, args);
-                                componentProp.boxedValue = args[0];
+                                var initMethod = componentType.GetMethod(
+                                    "Init",
+                                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                                );
+                                if (initMethod != null)
+                                {
+                                    object[] args = { componentProp.boxedValue };
+                                    initMethod.Invoke(null, args);
+                                    componentProp.boxedValue = args[0];
+                                }
                             }
+                            EditorGUI.indentLevel--;
                         }
+
+                        EditorGUILayout.EndVertical();
                     }
                     else
                     {
@@ -348,6 +363,77 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 EditorGUILayout.PropertyField(copy, true);
                 copy.NextVisible(false);
             }
+        }
+
+        private static bool HasUnitySerializableFields(Type type)
+        {
+            if (type == null)
+                return false;
+
+            if (_hasSerializableFieldsCache.TryGetValue(type, out var cached))
+                return cached;
+
+            var hasSerializable = false;
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                if (IsUnitySerializableField(fields[i]))
+                {
+                    hasSerializable = true;
+                    break;
+                }
+            }
+
+            _hasSerializableFieldsCache[type] = hasSerializable;
+            return hasSerializable;
+        }
+
+        private static bool IsUnitySerializableField(FieldInfo field)
+        {
+            if (field.IsNotSerialized || field.GetCustomAttribute<NonSerializedAttribute>() != null)
+                return false;
+            if (!field.IsPublic && field.GetCustomAttribute<SerializeField>() == null
+                && field.GetCustomAttribute<SerializeReference>() == null)
+                return false;
+            if (field.GetCustomAttribute<SerializeReference>() != null)
+                return true;
+            return IsUnitySerializableType(field.FieldType);
+        }
+
+        private static bool IsUnitySerializableType(Type type)
+        {
+            if (type == null || type == typeof(object))
+                return false;
+            if (typeof(Object).IsAssignableFrom(type))
+                return true;
+            if (type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal))
+                return true;
+            if (type == typeof(Vector2) || type == typeof(Vector3) || type == typeof(Vector4)
+                || type == typeof(Quaternion) || type == typeof(Color) || type == typeof(Color32)
+                || type == typeof(Rect) || type == typeof(Bounds) || type == typeof(Matrix4x4)
+                || type == typeof(AnimationCurve) || type == typeof(Gradient)
+                || type == typeof(LayerMask) || type == typeof(Vector2Int) || type == typeof(Vector3Int)
+                || type == typeof(RectInt) || type == typeof(BoundsInt))
+                return true;
+
+            if (type.IsArray)
+                return type.GetArrayRank() == 1 && IsUnitySerializableType(type.GetElementType());
+
+            if (type.IsGenericType)
+            {
+                var definition = type.GetGenericTypeDefinition();
+                if (definition == typeof(List<>))
+                    return IsUnitySerializableType(type.GetGenericArguments()[0]);
+                if (definition == typeof(HashSet<>) || definition == typeof(Dictionary<,>)
+                    || definition == typeof(Queue<>) || definition == typeof(Stack<>))
+                    return false;
+                return type.IsDefined(typeof(SerializableAttribute), false);
+            }
+
+            if (type.IsInterface)
+                return false;
+
+            return type.IsValueType || type.IsDefined(typeof(SerializableAttribute), false);
         }
     }
 }
