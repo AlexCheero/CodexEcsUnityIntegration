@@ -24,7 +24,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             if (view.Have<TriggerExitComponent>())
             {
                 if (view.Have<OverrideTriggerExit>())
-                    view.GetEcsComponent<TriggerExitComponent>() = collisionComponent;
+                    view.Get<TriggerExitComponent>() = collisionComponent;
             }
             else
             {

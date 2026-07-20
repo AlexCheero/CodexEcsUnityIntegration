@@ -217,7 +217,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public ref T GetOrAdd<T>() => ref _world.GetOrAddComponent<T>(_id);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T GetEcsComponent<T>() => ref _world.Get<T>(_id);
+        public ref T Get<T>() => ref _world.Get<T>(_id);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove<T>() => _world.Remove<T>(_id);

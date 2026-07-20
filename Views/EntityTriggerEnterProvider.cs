@@ -25,7 +25,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             {
                 if (view.Have<OverrideTriggerEnter>())
                 {
-                    view.GetEcsComponent<TriggerEnterComponent>() = collisionComponent;
+                    view.Get<TriggerEnterComponent>() = collisionComponent;
                 }
             }
             else

@@ -27,7 +27,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             if (view.Have<ControllerColliderHitComponent>())
             {
                 if (view.Have<OverrideCollision>())
-                    view.GetEcsComponent<ControllerColliderHitComponent>() = collisionComponent;
+                    view.Get<ControllerColliderHitComponent>() = collisionComponent;
             }
             else
             {
