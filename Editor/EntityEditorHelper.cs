@@ -46,8 +46,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 _offlineBuffer.Clear();
                 _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
                 EditorGUILayout.Space();
-                
-                EditorGUI.indentLevel++;
 
                 for (int i = 0; i < componentsProp.arraySize; i++)
                 {
@@ -79,6 +77,12 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                 _offlineBuffer.Sort((p1, p2) =>
                     string.Compare(p1.TypeName, p2.TypeName, StringComparison.Ordinal));
+
+                DrawFoldExpandButtons(
+                    () => SetAllOfflineFoldouts(true),
+                    () => SetAllOfflineFoldouts(false));
+                
+                EditorGUI.indentLevel++;
                 for (int i = 0; i < _offlineBuffer.Count; i++)
                 {
                     EditorGUILayout.BeginHorizontal();
@@ -247,7 +251,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
             _onlineBuffer.Clear();
             
-            EditorGUI.indentLevel++;
             foreach (var componentId in view.GetMask())
             {
                 var componentType = ComponentMapping.GetTypeForId(componentId);
@@ -262,6 +265,12 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             }
             
             _onlineBuffer.Sort((t1, t2) => string.Compare(t1.Name, t2.Name, StringComparison.Ordinal));
+
+            DrawFoldExpandButtons(
+                () => SetAllRuntimeFoldouts(true),
+                () => SetAllRuntimeFoldouts(false));
+
+            EditorGUI.indentLevel++;
             for (int i = 0; i < _onlineBuffer.Count; i++)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -362,6 +371,48 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             {
                 EditorGUILayout.PropertyField(copy, true);
                 copy.NextVisible(false);
+            }
+        }
+
+        private static void DrawFoldExpandButtons(Action expandAll, Action foldAll)
+        {
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Expand All"))
+                expandAll();
+            if (GUILayout.Button("Fold All"))
+                foldAll();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+        }
+
+        private static void SetAllOfflineFoldouts(bool expanded)
+        {
+            for (int i = 0; i < _offlineBuffer.Count; i++)
+            {
+                var (typeName, _, componentType, componentProp) = _offlineBuffer[i];
+                if (componentProp != null && HasUnitySerializableFields(componentType))
+                    _offlineFoldouts[typeName] = expanded;
+            }
+        }
+
+        private static void SetAllRuntimeFoldouts(bool expanded)
+        {
+            for (int i = 0; i < _onlineBuffer.Count; i++)
+            {
+                var componentType = _onlineBuffer[i];
+                if (!_proxies.TryGetValue(componentType, out var proxy))
+                {
+                    proxy = ScriptableObject.CreateInstance<RuntimeComponentProxy>();
+                    proxy.hideFlags = HideFlags.DontSave;
+                    _proxies[componentType] = proxy;
+                    _serializedProxies[componentType] = new SerializedObject(proxy);
+                }
+
+                var wrapperType = typeof(ComponentWrapper<>).MakeGenericType(componentType);
+                if (proxy.Value == null || proxy.Value.GetType() != wrapperType)
+                    proxy.Value = (ComponentWrapper)Activator.CreateInstance(wrapperType);
+
+                proxy.Value.IsExpanded = expanded;
             }
         }
 
