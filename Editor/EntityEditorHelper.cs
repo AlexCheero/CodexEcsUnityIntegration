@@ -104,7 +104,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         {
                             EditorGUI.indentLevel++;
                             EditorGUI.BeginChangeCheck();
-                            DrawChildren(componentProp);
+                            DrawComponentFields(componentProp, componentType);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 var initMethod = componentType.GetMethod(
@@ -347,7 +347,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                     // Рисуем ТОЛЬКО поля компонента
                     if (componentProp != null)
-                        DrawChildren(componentProp);
+                        DrawComponentFields(componentProp, componentType);
 
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -358,6 +358,70 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     EditorGUI.indentLevel--;
                 }
             }
+        }
+
+        private static readonly Dictionary<Type, bool> _hasCustomDrawerCache = new();
+
+        /// <summary>
+        /// Uses a component [CustomPropertyDrawer] when one exists. Otherwise draws
+        /// visible children only — PropertyField on the whole _component can error on
+        /// non-serializable fields (HashSet, Dictionary, …) under SerializeReference.
+        /// </summary>
+        private static void DrawComponentFields(SerializedProperty componentProp, Type componentType)
+        {
+            if (HasCustomPropertyDrawer(componentType))
+                EditorGUILayout.PropertyField(componentProp, GUIContent.none, true);
+            else
+                DrawChildren(componentProp);
+        }
+
+        private static bool HasCustomPropertyDrawer(Type componentType)
+        {
+            if (componentType == null)
+                return false;
+
+            if (_hasCustomDrawerCache.TryGetValue(componentType, out var cached))
+                return cached;
+
+            var hasDrawer = false;
+            var typeField = typeof(CustomPropertyDrawer).GetField(
+                "m_Type", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var useForChildrenField = typeof(CustomPropertyDrawer).GetField(
+                "m_UseForChildren", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (typeField != null)
+            {
+                foreach (var drawerType in TypeCache.GetTypesWithAttribute<CustomPropertyDrawer>())
+                {
+                    var attrs = drawerType.GetCustomAttributes(typeof(CustomPropertyDrawer), false);
+                    for (int i = 0; i < attrs.Length; i++)
+                    {
+                        var drawnType = typeField.GetValue(attrs[i]) as Type;
+                        if (drawnType == null)
+                            continue;
+
+                        if (drawnType == componentType)
+                        {
+                            hasDrawer = true;
+                            break;
+                        }
+
+                        var useForChildren = useForChildrenField != null &&
+                                             (bool)useForChildrenField.GetValue(attrs[i]);
+                        if (useForChildren && componentType.IsSubclassOf(drawnType))
+                        {
+                            hasDrawer = true;
+                            break;
+                        }
+                    }
+
+                    if (hasDrawer)
+                        break;
+                }
+            }
+
+            _hasCustomDrawerCache[componentType] = hasDrawer;
+            return hasDrawer;
         }
 
         private static void DrawChildren(SerializedProperty property)
