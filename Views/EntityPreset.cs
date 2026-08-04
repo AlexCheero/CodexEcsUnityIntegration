@@ -13,6 +13,20 @@ public class EntityPreset : ScriptableObject
     [SerializeReference]
     private List<ComponentWrapper> _components;
     public IReadOnlyList<ComponentWrapper> Components => _components;
+
+    public bool TryGetComponentDefaultValue<T>(out T result) where T : IComponent
+    {
+        result = default;
+        var targetType = typeof(T);
+        for (int i = 0; i < _components.Count; i++)
+        {
+            if (_components[i].GetComponentType() != targetType)
+                continue;
+            result = ((ComponentWrapper<T>)_components[i]).Component;
+            return true;
+        }
+        return false;
+    }
     
     public int CreatePureEntity(EcsWorld world)
     {
