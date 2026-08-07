@@ -26,4 +26,9 @@ public struct #SCRIPTNAME# : IComponent
     /*call cleanup logic here*/
     //[MethodImpl(MethodImplOptions.AggressiveInlining)]
     //public static void Cleanup(ref #SCRIPTNAME# instance) { }
+
+#if UNITY_EDITOR
+    /*editor-only: called when added via EntityView/EntityPreset inspector*/
+    //public static void OnAdded(ref #SCRIPTNAME# instance) { }
+#endif
 }

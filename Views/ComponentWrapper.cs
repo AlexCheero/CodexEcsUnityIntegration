@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using CodexECS;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public bool IsExpanded;
         
         public abstract void InitFromComponent(IComponent component);
+        public abstract void OnAdded();
         public abstract void ReadFromWorld(EcsWorld world, int eid);
         public abstract void WriteToWorld(EcsWorld world, int eid);
 #endif
@@ -43,7 +45,23 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override Type GetComponentType() => typeof(T);
 
 #if UNITY_EDITOR
+        private static void DefaultOnAdded(ref T instance) { }
+        private delegate void OnAddedDelegate(ref T instance);
+        private static readonly OnAddedDelegate _onAdded;
+
+        static ComponentWrapper()
+        {
+            var onAddedMethod = typeof(T).GetMethod(nameof(OnAdded),
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (onAddedMethod != null)
+                _onAdded = (OnAddedDelegate)Delegate.CreateDelegate(typeof(OnAddedDelegate), onAddedMethod);
+            else
+                _onAdded = DefaultOnAdded;
+        }
+
         public override void InitFromComponent(IComponent component) => _component = (T)component;
+
+        public override void OnAdded() => _onAdded(ref _component);
 
         public override void ReadFromWorld(EcsWorld world, int eid)
         {

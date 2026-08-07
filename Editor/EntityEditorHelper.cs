@@ -179,6 +179,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                         var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
                         if (defaultValueGetter != null)
                             wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
+                        wrapper.OnAdded();
                         element.managedReferenceValue = wrapper;
                     }
 
