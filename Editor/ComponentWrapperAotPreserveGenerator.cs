@@ -103,6 +103,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 {
                     if (type == null || type.IsInterface || type.IsAbstract || type.IsGenericTypeDefinition)
                         continue;
+                    if (!type.IsVisible)
+                        continue;
                     if (!iComponent.IsAssignableFrom(type))
                         continue;
                     result.Add(type);
@@ -167,11 +169,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
 
         private static string GetTypeDisplayName(Type type)
         {
-            if (type.IsNested)
-                return $"global::{type.FullName.Replace('+', '.')}";
-            if (!string.IsNullOrEmpty(type.Namespace))
-                return $"global::{type.Namespace}.{type.Name}";
-            return $"global::{type.Name}";
+            // Prefer FullName so namespaced / nested types stay correct (Namespace can be unreliable for some loads).
+            var fullName = type.FullName;
+            if (string.IsNullOrEmpty(fullName))
+                fullName = type.Name;
+            return "global::" + fullName.Replace('+', '.');
         }
     }
 }
