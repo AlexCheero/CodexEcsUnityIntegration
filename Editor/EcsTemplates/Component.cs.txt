@@ -1,14 +1,10 @@
 using System;
 using CodexECS;
 using System.Runtime.CompilerServices;
-using CodexFramework.CodexEcsUnityIntegration.Views;
 
 [Serializable]
 public struct #SCRIPTNAME# : IComponent
 {
-    //needed to prevent stripping wrappers from build
-    public static readonly Type WrapperType = typeof(ComponentWrapper<#SCRIPTNAME#>);
-
     /*initial pool size for component. 2 is default*/
     //public const int InitialPoolSize = 2;
 

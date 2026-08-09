@@ -1,6 +1,5 @@
 ﻿using System;
 using CodexECS;
-using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Components
@@ -64,21 +63,17 @@ namespace CodexFramework.CodexEcsUnityIntegration.Tags
 {
     public struct OverrideCollision : IComponent
     {
-        public static readonly Type WrapperType = typeof(ComponentWrapper<OverrideCollision>);
     }
 
     public struct OverrideTriggerEnter : IComponent
     {
-        public static readonly Type WrapperType = typeof(ComponentWrapper<OverrideTriggerEnter>);
     }
 
     public struct OverrideTriggerExit : IComponent
     {
-        public static readonly Type WrapperType = typeof(ComponentWrapper<OverrideTriggerExit>);
     }
     
     public struct PureEntity : IComponent
     {
-        public static readonly Type WrapperType = typeof(ComponentWrapper<PureEntity>);
     }
 }
