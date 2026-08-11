@@ -38,157 +38,160 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private static readonly Dictionary<string, bool> _offlineFoldouts = new();
         private static readonly Dictionary<Type, bool> _hasSerializableFieldsCache = new();
 
-        public static void DrawComponentsInspector(SerializedProperty componentsProp, IReadOnlyList<ComponentWrapper> addedComponents)
+    public static void DrawComponentsInspector(
+        SerializedProperty componentsProp,
+        IReadOnlyList<ComponentWrapper> addedComponents,
+        Object owner)
+    {
+        _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
+        if (_showComponents)
         {
-            _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
-            if (_showComponents)
+            _offlineBuffer.Clear();
+            _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
+            EditorGUILayout.Space();
+
+            for (int i = 0; i < componentsProp.arraySize; i++)
             {
-                _offlineBuffer.Clear();
-                _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
-                EditorGUILayout.Space();
+                var element = componentsProp.GetArrayElementAtIndex(i);
+                var obj = element.managedReferenceValue;
 
-                for (int i = 0; i < componentsProp.arraySize; i++)
+                if (obj == null)
+                    continue;
+
+                var type = obj.GetType();
+                while (type != null && !type.IsGenericType)
+                    type = type.BaseType;
+                if (type == null)
                 {
-                    var element = componentsProp.GetArrayElementAtIndex(i);
-                    var obj = element.managedReferenceValue;
-
-                    if (obj == null)
-                        continue;
-
-                    var type = obj.GetType();
-                    while (type != null && !type.IsGenericType)
-                        type = type.BaseType;
-                    if (type == null)
-                    {
-                        Debug.LogError("Can't find generic component wrapper base type");
-                        continue;
-                    }
-                    
-                    var componentType = type.GetGenericArguments()[0];
-                    var typeName = componentType.Name;
-
-                    if (!string.IsNullOrEmpty(_componentFilter) &&
-                        !typeName.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
-                        continue;
-                    
-                    var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
-                    _offlineBuffer.Add((typeName, i, componentType, componentProp));
+                    Debug.LogError("Can't find generic component wrapper base type");
+                    continue;
                 }
-
-                _offlineBuffer.Sort((p1, p2) =>
-                    string.Compare(p1.TypeName, p2.TypeName, StringComparison.Ordinal));
-
-                DrawFoldExpandButtons(
-                    () => SetAllOfflineFoldouts(true),
-                    () => SetAllOfflineFoldouts(false));
                 
-                EditorGUI.indentLevel++;
-                for (int i = 0; i < _offlineBuffer.Count; i++)
+                var componentType = type.GetGenericArguments()[0];
+                var typeName = componentType.Name;
+
+                if (!string.IsNullOrEmpty(_componentFilter) &&
+                    !typeName.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
+                    continue;
+                
+                var componentProp = element.FindPropertyRelative(ComponentWrapper.ComponentPropertyName);
+                _offlineBuffer.Add((typeName, i, componentType, componentProp));
+            }
+
+            _offlineBuffer.Sort((p1, p2) =>
+                string.Compare(p1.TypeName, p2.TypeName, StringComparison.Ordinal));
+
+            DrawFoldExpandButtons(
+                () => SetAllOfflineFoldouts(true),
+                () => SetAllOfflineFoldouts(false));
+            
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < _offlineBuffer.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                
+                var (typeName, j, componentType, componentProp) = _offlineBuffer[i];
+                // Never PropertyField the whole _component: non-serializable fields (HashSet,
+                // Dictionary, …) under SerializeReference spam managed-reference errors.
+                // Draw only Unity-serializable children, or a label for tag-like components.
+                if (componentProp != null && HasUnitySerializableFields(componentType))
                 {
-                    EditorGUILayout.BeginHorizontal();
-                    
-                    var (typeName, j, componentType, componentProp) = _offlineBuffer[i];
-                    // Never PropertyField the whole _component: non-serializable fields (HashSet,
-                    // Dictionary, …) under SerializeReference spam managed-reference errors.
-                    // Draw only Unity-serializable children, or a label for tag-like components.
-                    if (componentProp != null && HasUnitySerializableFields(componentType))
+                    EditorGUILayout.BeginVertical();
+
+                    if (!_offlineFoldouts.TryGetValue(typeName, out var expanded))
+                        expanded = true;
+                    expanded = EditorGUILayout.Foldout(expanded, typeName, true);
+                    _offlineFoldouts[typeName] = expanded;
+
+                    if (expanded)
                     {
-                        EditorGUILayout.BeginVertical();
-
-                        if (!_offlineFoldouts.TryGetValue(typeName, out var expanded))
-                            expanded = true;
-                        expanded = EditorGUILayout.Foldout(expanded, typeName, true);
-                        _offlineFoldouts[typeName] = expanded;
-
-                        if (expanded)
+                        EditorGUI.indentLevel++;
+                        EditorGUI.BeginChangeCheck();
+                        DrawComponentFields(componentProp, componentType);
+                        if (EditorGUI.EndChangeCheck())
                         {
-                            EditorGUI.indentLevel++;
-                            EditorGUI.BeginChangeCheck();
-                            DrawComponentFields(componentProp, componentType);
-                            if (EditorGUI.EndChangeCheck())
+                            var initMethod = componentType.GetMethod(
+                                "Init",
+                                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                            );
+                            if (initMethod != null)
                             {
-                                var initMethod = componentType.GetMethod(
-                                    "Init",
-                                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-                                );
-                                if (initMethod != null)
-                                {
-                                    object[] args = { componentProp.boxedValue };
-                                    initMethod.Invoke(null, args);
-                                    componentProp.boxedValue = args[0];
-                                }
+                                object[] args = { componentProp.boxedValue };
+                                initMethod.Invoke(null, args);
+                                componentProp.boxedValue = args[0];
                             }
-                            EditorGUI.indentLevel--;
                         }
+                        EditorGUI.indentLevel--;
+                    }
 
-                        EditorGUILayout.EndVertical();
-                    }
-                    else
-                    {
-                        EditorGUILayout.LabelField(typeName);
-                    }
-                    
-                    if (GUILayout.Button("-", GUILayout.Width(20)))
-                    {
-                        componentsProp.DeleteArrayElementAtIndex(j);
-                        break;
-                    }
-                    
-                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
                 }
-                
-                EditorGUI.indentLevel--;
-            }
-
-            if (GUILayout.Button(_addListExpanded ? "Fold" : "Add Component"))
-                _addListExpanded = !_addListExpanded;
-            if (_addListExpanded)
-            {
-                _addFilter = EditorGUILayout.TextField("Search", _addFilter);
-                EditorGUILayout.Space();
-                
-                EditorGUI.indentLevel++;
-
-                var componentTypes = IntegrationHelper.ComponentTypes;
-                for (int i = 0; i < componentTypes.Count; i++)
+                else
                 {
-                    if (!string.IsNullOrEmpty(_addFilter)
-                        && !componentTypes[i].Name
-                            .Contains(_addFilter, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        continue;
-                    }
-                    
-                    var addableComponentType = componentTypes[i];
-                    if (addedComponents != null && addedComponents.Any(c => c.GetComponentType() == addableComponentType))
-                        continue;
-                    
-                    EditorGUILayout.BeginHorizontal("box");
-
-                    EditorGUILayout.LabelField(addableComponentType.Name);
-
-                    if (GUILayout.Button("+", GUILayout.Width(25)))
-                    {
-                        var index = componentsProp.arraySize;
-                        componentsProp.InsertArrayElementAtIndex(index);
-
-                        var element = componentsProp.GetArrayElementAtIndex(index);
-                        var defaultValueGetter = addableComponentType.GetProperty("Default",
-                            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                        var viewType = typeof(ComponentWrapper<>).MakeGenericType(addableComponentType);
-                        var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
-                        if (defaultValueGetter != null)
-                            wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
-                        wrapper.OnAdded();
-                        element.managedReferenceValue = wrapper;
-                    }
-
-                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.LabelField(typeName);
                 }
                 
-                EditorGUI.indentLevel--;
+                if (GUILayout.Button("-", GUILayout.Width(20)))
+                {
+                    componentsProp.DeleteArrayElementAtIndex(j);
+                    break;
+                }
+                
+                EditorGUILayout.EndHorizontal();
             }
+            
+            EditorGUI.indentLevel--;
         }
+
+        if (GUILayout.Button(_addListExpanded ? "Fold" : "Add Component"))
+            _addListExpanded = !_addListExpanded;
+        if (_addListExpanded)
+        {
+            _addFilter = EditorGUILayout.TextField("Search", _addFilter);
+            EditorGUILayout.Space();
+            
+            EditorGUI.indentLevel++;
+
+            var componentTypes = IntegrationHelper.ComponentTypes;
+            for (int i = 0; i < componentTypes.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(_addFilter)
+                    && !componentTypes[i].Name
+                        .Contains(_addFilter, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    continue;
+                }
+                
+                var addableComponentType = componentTypes[i];
+                if (addedComponents != null && addedComponents.Any(c => c.GetComponentType() == addableComponentType))
+                    continue;
+                
+                EditorGUILayout.BeginHorizontal("box");
+
+                EditorGUILayout.LabelField(addableComponentType.Name);
+
+                if (GUILayout.Button("+", GUILayout.Width(25)))
+                {
+                    var index = componentsProp.arraySize;
+                    componentsProp.InsertArrayElementAtIndex(index);
+
+                    var element = componentsProp.GetArrayElementAtIndex(index);
+                    var defaultValueGetter = addableComponentType.GetProperty("Default",
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    var viewType = typeof(ComponentWrapper<>).MakeGenericType(addableComponentType);
+                    var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
+                    if (defaultValueGetter != null)
+                        wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
+                    wrapper.OnAdded(owner);
+                    element.managedReferenceValue = wrapper;
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+            
+            EditorGUI.indentLevel--;
+        }
+    }
 
         public static void DrawRuntimeInspector(EntityView view)
         {

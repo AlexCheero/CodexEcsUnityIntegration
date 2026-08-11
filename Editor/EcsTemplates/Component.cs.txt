@@ -24,7 +24,7 @@ public struct #SCRIPTNAME# : IComponent
     //public static void Cleanup(ref #SCRIPTNAME# instance) { }
 
 #if UNITY_EDITOR
-    /*editor-only: called when added via EntityView/EntityPreset inspector*/
-    //public static void OnAdded(ref #SCRIPTNAME# instance) { }
+    /*editor-only: called when added via EntityView/EntityPreset inspector; owner is the view/preset*/
+    //public static void OnAdded(ref #SCRIPTNAME# instance, UnityEngine.Object owner) { }
 #endif
 }

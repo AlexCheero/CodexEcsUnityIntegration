@@ -36,7 +36,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             EditorGUILayout.PropertyField(_forceInitProp);
             
             if (!_view.IsViewValid())
-                EntityEditorHelper.DrawComponentsInspector(_componentsProp, _view.Components);
+                EntityEditorHelper.DrawComponentsInspector(_componentsProp, _view.Components, _view);
             else
                 EntityEditorHelper.DrawRuntimeInspector(_view);
 

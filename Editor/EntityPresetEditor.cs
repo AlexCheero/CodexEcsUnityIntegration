@@ -14,7 +14,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             var so = (EntityPreset)target;
             serializedObject.Update();
 
-            EntityEditorHelper.DrawComponentsInspector(_componentsProp, so.Components);
+            EntityEditorHelper.DrawComponentsInspector(_componentsProp, so.Components, so);
 
             serializedObject.ApplyModifiedProperties();
         }

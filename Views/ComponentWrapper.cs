@@ -19,7 +19,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public bool IsExpanded;
         
         public abstract void InitFromComponent(IComponent component);
-        public abstract void OnAdded();
+        public abstract void OnAdded(UnityEngine.Object owner);
         public abstract void ReadFromWorld(EcsWorld world, int eid);
         public abstract void WriteToWorld(EcsWorld world, int eid);
 #endif
@@ -45,8 +45,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override Type GetComponentType() => typeof(T);
 
 #if UNITY_EDITOR
-        private static void DefaultOnAdded(ref T instance) { }
-        private delegate void OnAddedDelegate(ref T instance);
+        private static void DefaultOnAdded(ref T instance, UnityEngine.Object owner) { }
+        private delegate void OnAddedDelegate(ref T instance, UnityEngine.Object owner);
         private static readonly OnAddedDelegate _onAdded;
 
         static ComponentWrapper()
@@ -61,7 +61,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public override void InitFromComponent(IComponent component) => _component = (T)component;
 
-        public override void OnAdded() => _onAdded(ref _component);
+        public override void OnAdded(UnityEngine.Object owner) => _onAdded(ref _component, owner);
 
         public override void ReadFromWorld(EcsWorld world, int eid)
         {
