@@ -44,6 +44,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         private void OnValidate()
         {
+            // PasteComponentAsNew can invoke OnValidate before _components is assigned.
+            if (_components == null)
+                return;
             for (int i = _components.Count - 1; i >= 0; i--)
             {
                 if (_components[i] == null)
