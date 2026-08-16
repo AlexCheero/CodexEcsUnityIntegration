@@ -1,6 +1,5 @@
 using System;
 using CodexECS;
-using System.Runtime.CompilerServices;
 
 [Serializable]
 public struct #SCRIPTNAME# : IComponent
@@ -11,16 +10,13 @@ public struct #SCRIPTNAME# : IComponent
     /*init default value here*/
     //public static #SCRIPTNAME# Default
     //{
-    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     //    get => new() { };
     //}
 
     /*call init logic here*/
-    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
     //public static void Init(ref #SCRIPTNAME# instance) { }
 
     /*call cleanup logic here*/
-    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
     //public static void Cleanup(ref #SCRIPTNAME# instance) { }
 
 #if UNITY_EDITOR
