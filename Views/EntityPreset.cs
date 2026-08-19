@@ -8,6 +8,8 @@ public class EntityPreset : ScriptableObject
 {
 #if UNITY_EDITOR
     public const string ComponentsPropertyName = nameof(_components);
+    
+    private void OnValidate() => EntityValidator.ValidateComponents(_components);
 #endif
     
     [SerializeReference]

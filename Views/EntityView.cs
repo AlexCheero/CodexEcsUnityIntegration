@@ -6,6 +6,23 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
 {
+#if UNITY_EDITOR
+    public static class EntityValidator
+    {
+        public static void ValidateComponents(List<ComponentWrapper> components)
+        {
+            // PasteComponentAsNew can invoke OnValidate before _components is assigned.
+            if (components == null)
+                return;
+            for (int i = components.Count - 1; i >= 0; i--)
+            {
+                if (components[i] == null)
+                    components.RemoveAt(i);
+            }
+        }
+    }
+#endif
+    
     public static class EntityViewExtension
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,17 +59,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddInspector<T>() => Add<T>();
 
-        private void OnValidate()
-        {
-            // PasteComponentAsNew can invoke OnValidate before _components is assigned.
-            if (_components == null)
-                return;
-            for (int i = _components.Count - 1; i >= 0; i--)
-            {
-                if (_components[i] == null)
-                    _components.RemoveAt(i);
-            }
-        }
+        private void OnValidate() => EntityValidator.ValidateComponents(_components);
 #endif
         
         [SerializeReference]
