@@ -67,6 +67,25 @@ namespace CodexFramework.CodexEcsUnityIntegration
         private Dictionary<ESystemCategory, Dictionary<Type, int>> _systemToIndexMapping;
         private Dictionary<ESystemCategory, EcsSystem[]> _systems;
 
+        private void OnDestroy()
+        {
+            if (_systems == null)
+                return;
+
+            var disposed = new HashSet<IDisposable>();
+            foreach (var categorySystems in _systems.Values)
+            {
+                if (categorySystems == null)
+                    continue;
+
+                foreach (var system in categorySystems)
+                {
+                    if (system is IDisposable disposable && disposed.Add(disposable))
+                        disposable.Dispose();
+                }
+            }
+        }
+
         private EcsSystem[] GetSystemByCategory(ESystemCategory category) =>
             _systems.ContainsKey(category) ? _systems[category] : null;
 
