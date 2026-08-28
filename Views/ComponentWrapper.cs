@@ -11,6 +11,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     {
         public abstract void AddToWorld(EcsWorld world, int id);
         public abstract Type GetComponentType();
+        public abstract IComponent GetBoxedDefaultValue();
         
 #if UNITY_EDITOR
         public const string ComponentPropertyName = "_component";
@@ -43,6 +44,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
         
         public override Type GetComponentType() => typeof(T);
+
+        /// <summary>
+        /// Exposes the serialized prototype value without requiring callers to reflect into
+        /// the private generic field. Value-type components are intentionally boxed here;
+        /// this path is for startup inspection, not frame-time ECS access.
+        /// </summary>
+        public override IComponent GetBoxedDefaultValue() => _component;
 
 #if UNITY_EDITOR
         private static void DefaultOnAdded(ref T instance, UnityEngine.Object owner) { }
