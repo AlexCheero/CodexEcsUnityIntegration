@@ -2,6 +2,7 @@ using CodexECS;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using CodexFramework.CodexEcsUnityIntegration.Tags;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Views
@@ -234,7 +235,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int CreatePureEntity(EcsWorld world)
         {
-            var destinationMask = BuildDestinationMask(false);
+            var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
             var eid = world.CreateWithComponents(destinationMask);
             for (var i = 0; i < _components.Count; i++)
                 _components[i].AddToWorld(world, eid);

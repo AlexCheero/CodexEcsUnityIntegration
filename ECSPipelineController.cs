@@ -9,15 +9,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
     public class ECSPipelineController : Singleton<ECSPipelineController>
     {
         [SerializeField]
-        private ECSPipeline[] _pipelines;
+        private ECSPipelineBehaviour[] _pipelines;
 
         private EcsWorld _world;
         private int _currentPipelineIdx;
 
         public EcsWorld World => _world;
-        public bool IsPaused => CurrentPipeline.IsPaused;
+        public bool IsPaused => CurrentPipelineBehaviour.IsPaused;
 
-        public ECSPipeline CurrentPipeline => _pipelines[_currentPipelineIdx];
+        public ECSPipelineBehaviour CurrentPipelineBehaviour => _pipelines[_currentPipelineIdx];
 
         //previously was void Start()
         protected override void Init()
@@ -58,20 +58,20 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         public void TogglePause()
         {
-            if (CurrentPipeline.IsPaused)
-                CurrentPipeline.Unpause();
+            if (CurrentPipelineBehaviour.IsPaused)
+                CurrentPipelineBehaviour.Unpause();
             else
-                CurrentPipeline.Pause();
+                CurrentPipelineBehaviour.Pause();
         }
 
-        public void Pause() => CurrentPipeline.Pause();
-        public void Unpause() => CurrentPipeline.Unpause();
+        public void Pause() => CurrentPipelineBehaviour.Pause();
+        public void Unpause() => CurrentPipelineBehaviour.Unpause();
 
         public void CreateEntityWithComponent<T>(T comp = default) => _world.Add(_world.Create(), comp);
 
         public void ReRunInit()
         {
-            CurrentPipeline.RunInitSystems();
+            CurrentPipelineBehaviour.RunInitSystems();
         }
     }
 }

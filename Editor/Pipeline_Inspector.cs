@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Editor
 {
-    [CustomEditor(typeof(ECSPipeline))]
+    [CustomEditor(typeof(ECSPipelineBehaviour))]
     public class Pipeline_Inspector : UnityEditor.Editor
     {
         private static Dictionary<ESystemCategory, string> _systemLabels;
@@ -30,14 +30,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         private ReorderableList _disableList;
         private ReorderableList _reactiveList;
 
-        private ECSPipeline _pipeline;
-        private ECSPipeline Pipeline
+        private ECSPipelineBehaviour pipelineBehaviour;
+        private ECSPipelineBehaviour PipelineBehaviour
         {
             get
             {
-                if (_pipeline == null)
-                    _pipeline = (ECSPipeline)target;
-                return _pipeline;
+                if (pipelineBehaviour == null)
+                    pipelineBehaviour = (ECSPipelineBehaviour)target;
+                return pipelineBehaviour;
             }
         }
 
@@ -62,9 +62,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             reorderableList.drawElementCallback = (rect, index, _, _) =>
             {
                 var element = reorderableList.serializedProperty.GetArrayElementAtIndex(index);
-                var scriptProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Script));
-                var activeProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Active));
-                var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.NonPausable));
+                var scriptProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.Script));
+                var activeProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.Active));
+                var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.NonPausable));
 
                 DrawElement(rect, scriptProp, activeProp, nonPausableProp, index);
             };
@@ -128,14 +128,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             //TODO: not working for now
             // foreach (var category in allCategories)
             //     _systemLabels[category] = category.ToString();
-            _systemLabels[ESystemCategory.Init] = nameof(ECSPipeline._initSystemScripts);
-            _systemLabels[ESystemCategory.Update] = nameof(ECSPipeline._updateSystemScripts);
-            _systemLabels[ESystemCategory.LateUpdate] = nameof(ECSPipeline._lateUpdateSystemScripts);
-            _systemLabels[ESystemCategory.FixedUpdate] = nameof(ECSPipeline._fixedUpdateSystemScripts);
-            _systemLabels[ESystemCategory.LateFixedUpdate] = nameof(ECSPipeline._lateFixedUpdateSystemScripts);
-            _systemLabels[ESystemCategory.OnEnable] = nameof(ECSPipeline._enableSystemScripts);
-            _systemLabels[ESystemCategory.OnDisable] = nameof(ECSPipeline._disableSystemScripts);
-            _systemLabels[ESystemCategory.Reactive] = nameof(ECSPipeline._reactiveSystemScripts);
+            _systemLabels[ESystemCategory.Init] = nameof(ECSPipelineBehaviour._initSystemScripts);
+            _systemLabels[ESystemCategory.Update] = nameof(ECSPipelineBehaviour._updateSystemScripts);
+            _systemLabels[ESystemCategory.LateUpdate] = nameof(ECSPipelineBehaviour._lateUpdateSystemScripts);
+            _systemLabels[ESystemCategory.FixedUpdate] = nameof(ECSPipelineBehaviour._fixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.LateFixedUpdate] = nameof(ECSPipelineBehaviour._lateFixedUpdateSystemScripts);
+            _systemLabels[ESystemCategory.OnEnable] = nameof(ECSPipelineBehaviour._enableSystemScripts);
+            _systemLabels[ESystemCategory.OnDisable] = nameof(ECSPipelineBehaviour._disableSystemScripts);
+            _systemLabels[ESystemCategory.Reactive] = nameof(ECSPipelineBehaviour._reactiveSystemScripts);
             //===================================================
             
             _systemScripts = new(allCategories.Length);
@@ -162,14 +162,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 }
             }
 
-            _initList = InitializeSystemList(nameof(ECSPipeline._initSystemScripts));
-            _updateList = InitializeSystemList(nameof(ECSPipeline._updateSystemScripts));
-            _lateUpdateList = InitializeSystemList(nameof(ECSPipeline._lateUpdateSystemScripts));
-            _fixedUpdateList = InitializeSystemList(nameof(ECSPipeline._fixedUpdateSystemScripts));
-            _lateFixedUpdateList = InitializeSystemList(nameof(ECSPipeline._lateFixedUpdateSystemScripts));
-            _enableList = InitializeSystemList(nameof(ECSPipeline._enableSystemScripts));
-            _disableList = InitializeSystemList(nameof(ECSPipeline._disableSystemScripts));
-            _reactiveList = InitializeSystemList(nameof(ECSPipeline._reactiveSystemScripts));
+            _initList = InitializeSystemList(nameof(ECSPipelineBehaviour._initSystemScripts));
+            _updateList = InitializeSystemList(nameof(ECSPipelineBehaviour._updateSystemScripts));
+            _lateUpdateList = InitializeSystemList(nameof(ECSPipelineBehaviour._lateUpdateSystemScripts));
+            _fixedUpdateList = InitializeSystemList(nameof(ECSPipelineBehaviour._fixedUpdateSystemScripts));
+            _lateFixedUpdateList = InitializeSystemList(nameof(ECSPipelineBehaviour._lateFixedUpdateSystemScripts));
+            _enableList = InitializeSystemList(nameof(ECSPipelineBehaviour._enableSystemScripts));
+            _disableList = InitializeSystemList(nameof(ECSPipelineBehaviour._disableSystemScripts));
+            _reactiveList = InitializeSystemList(nameof(ECSPipelineBehaviour._reactiveSystemScripts));
         }
 
         public override VisualElement CreateInspectorGUI()
@@ -189,7 +189,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 EditorGUILayout.BeginVertical();
                 foreach (var category in IntegrationHelper.SystemCategories)
                 {
-                    DrawAddList(_systemLabels[category], _systemScripts[category], Pipeline.GetSystemScriptsByCategory(category),
+                    DrawAddList(_systemLabels[category], _systemScripts[category], PipelineBehaviour.GetSystemScriptsByCategory(category),
                         script => OnAddSystem(script, category));
                 }
                 EditorGUILayout.EndVertical();
@@ -207,7 +207,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             DrawSystemCategory(_reactiveList, _systemLabels[ESystemCategory.Reactive]);
         }
 
-        private static bool ShouldSkipItem(MonoScript item, ECSPipeline.SystemEntry[] skippedItems)
+        private static bool ShouldSkipItem(MonoScript item, ECSPipelineBehaviour.SystemEntry[] skippedItems)
         {
             for (var i = 0; i < skippedItems.Length; i++)
             {
@@ -218,7 +218,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             return false;
         }
 
-        public void DrawAddList(string label, List<MonoScript> systems, ECSPipeline.SystemEntry[] except, Action<MonoScript> onAdd)
+        public void DrawAddList(string label, List<MonoScript> systems, ECSPipelineBehaviour.SystemEntry[] except, Action<MonoScript> onAdd)
         {
             EditorGUILayout.LabelField(label + ':');
             GUILayout.Space(10);
@@ -263,14 +263,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 for (int i = 0; i < arrayProperty.arraySize; i++)
                 {
                     var element = arrayProperty.GetArrayElementAtIndex(i);
-                    var scriptProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Script));
+                    var scriptProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.Script));
 
                     if (scriptProp.objectReferenceValue != null &&
                         scriptProp.objectReferenceValue.name.Contains(_addedSearch, StringComparison.InvariantCultureIgnoreCase))
                     {
                         var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
-                        var activeProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.Active));
-                        var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipeline.SystemEntry.NonPausable));
+                        var activeProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.Active));
+                        var nonPausableProp = element.FindPropertyRelative(nameof(ECSPipelineBehaviour.SystemEntry.NonPausable));
                         DrawElement(rect, scriptProp, activeProp, nonPausableProp, i);
                     }
                 }
@@ -296,7 +296,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
         {
             //_addListExpanded = false;
 
-            var pipeline = Pipeline;
+            var pipeline = PipelineBehaviour;
             if (pipeline.AddSystem(script, systemCategory))
                 EditorUtility.SetDirty(target);
         }

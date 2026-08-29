@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if UNITY_EDITOR
+using UnityEditor.Compilation;
+#endif
 
 namespace CodexFramework.CodexEcsUnityIntegration
 {
@@ -48,6 +51,19 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     return e.Types.Where(t => t != null);
                 }
             }).Where(t => !t.IsAbstract && !t.IsInterface && !t.IsGenericType);
+
+#if UNITY_EDITOR
+            // Editor and test assemblies can contain fixture-only IComponent/EcsSystem
+            // implementations. Exposing those in serialized pickers creates references
+            // that player builds cannot resolve, so discovery is limited to assemblies
+            // that Unity includes in a player compilation.
+            var playerAssemblyNames = CompilationPipeline
+                .GetAssemblies(AssembliesType.Player)
+                .Select(assembly => assembly.name)
+                .ToHashSet(StringComparer.Ordinal);
+            allTypes = allTypes.Where(type =>
+                playerAssemblyNames.Contains(type.Assembly.GetName().Name));
+#endif
             
             SystemTypes = allTypes
                 .Where(t => typeof(EcsSystem).IsAssignableFrom(t) && t != typeof(EcsSystem))
@@ -55,7 +71,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
             
 #if UNITY_EDITOR
             ComponentTypes = allTypes
-                .Where(t => typeof(IComponent).IsAssignableFrom(t))
+                .Where(t => typeof(IComponent).IsAssignableFrom(t) && t != typeof(MatchReact))
                 .OrderBy(t => t.Name)
                 .ToList();
 #endif

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CodexECS;
+using CodexFramework.CodexEcsUnityIntegration.Tags;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEngine;
 
@@ -32,7 +33,7 @@ public class EntityPreset : ScriptableObject
     
     public int CreatePureEntity(EcsWorld world)
     {
-        var mask = new BitMask();
+        var mask = new BitMask().SetTypeId<PureEntity>();
         for (var i = 0; i < _components.Count; i++)
             mask.Set(_components[i].GetComponentId());
 

@@ -17,7 +17,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private static bool _showComponents;
         private static string _addFilter;
         private static string _componentFilter;
-        private static GUIContent _componentGUIContent = new();
+        private static readonly GUIContent ComponentMenuContent = new("\u22ee", "Component actions");
         
         private static readonly Dictionary<Type, RuntimeComponentProxy> _proxies = new();
         private static readonly Dictionary<Type, SerializedObject> _serializedProxies = new();
@@ -130,7 +130,17 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 {
                     EditorGUILayout.LabelField(typeName);
                 }
-                
+
+                if (GUILayout.Button(ComponentMenuContent, GUILayout.Width(22)))
+                {
+                    var canPasteAsNew = EcsComponentClipboard.HasComponent &&
+                                        !EcsComponentClipboard.ContainsComponentType(
+                                            componentsProp,
+                                            addedComponents,
+                                            EcsComponentClipboard.ComponentType);
+                    ShowOfflineComponentMenu(owner, componentType, canPasteAsNew);
+                }
+
                 if (GUILayout.Button("-", GUILayout.Width(20)))
                 {
                     componentsProp.DeleteArrayElementAtIndex(j);
@@ -141,6 +151,25 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             }
             
             EditorGUI.indentLevel--;
+        }
+
+        if (EcsComponentClipboard.HasComponent)
+        {
+            var copiedType = EcsComponentClipboard.ComponentType;
+            var alreadyPresent = EcsComponentClipboard.ContainsComponentType(
+                componentsProp,
+                addedComponents,
+                copiedType);
+            using (new EditorGUI.DisabledScope(alreadyPresent))
+            {
+                if (GUILayout.Button($"Paste {copiedType.Name} As New"))
+                {
+                    EcsComponentClipboard.TryPasteComponentAsNew(
+                        componentsProp,
+                        addedComponents,
+                        owner);
+                }
+            }
         }
 
         if (GUILayout.Button(_addListExpanded ? "Fold" : "Add Component"))
@@ -163,7 +192,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 }
                 
                 var addableComponentType = componentTypes[i];
-                if (addedComponents != null && addedComponents.Any(c => c.GetComponentType() == addableComponentType))
+                if (addedComponents != null &&
+                    addedComponents.Any(c => c != null && c.GetComponentType() == addableComponentType))
                     continue;
                 
                 EditorGUILayout.BeginHorizontal("box");
@@ -171,20 +201,11 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 EditorGUILayout.LabelField(addableComponentType.Name);
 
                 if (GUILayout.Button("+", GUILayout.Width(25)))
-                {
-                    var index = componentsProp.arraySize;
-                    componentsProp.InsertArrayElementAtIndex(index);
-
-                    var element = componentsProp.GetArrayElementAtIndex(index);
-                    var defaultValueGetter = addableComponentType.GetProperty("Default",
-                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    var viewType = typeof(ComponentWrapper<>).MakeGenericType(addableComponentType);
-                    var wrapper = (ComponentWrapper)Activator.CreateInstance(viewType);
-                    if (defaultValueGetter != null)
-                        wrapper.InitFromComponent((IComponent)defaultValueGetter.GetValue(null));
-                    wrapper.OnAdded(owner);
-                    element.managedReferenceValue = wrapper;
-                }
+                    EcsComponentInspectorUtility.TryAddSerializedComponents(
+                        componentsProp,
+                        addedComponents,
+                        owner,
+                        addableComponentType);
 
                 EditorGUILayout.EndHorizontal();
             }
@@ -193,14 +214,72 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         }
     }
 
+        private static void ShowOfflineComponentMenu(Object owner, Type componentType, bool canPasteAsNew)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(
+                new GUIContent("Copy Component"),
+                false,
+                () => EcsComponentClipboard.CopyComponent(owner, componentType));
+
+            if (EcsComponentClipboard.HasComponent &&
+                EcsComponentClipboard.ComponentType == componentType)
+            {
+                menu.AddItem(
+                    new GUIContent("Paste Component Values"),
+                    false,
+                    () => EcsComponentClipboard.PasteComponentValues(owner, componentType));
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Paste Component Values"));
+            }
+
+            if (canPasteAsNew)
+            {
+                menu.AddItem(
+                    new GUIContent("Paste Component As New"),
+                    false,
+                    () => EcsComponentClipboard.PasteComponentAsNew(owner));
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Paste Component As New"));
+            }
+
+            menu.ShowAsContext();
+        }
+
         public static void DrawRuntimeInspector(EntityView view)
         {
+            if (view == null || !view.IsViewValid())
+            {
+                EditorGUILayout.HelpBox(
+                    "EntityView is not attached to a valid runtime entity.",
+                    MessageType.Info);
+                return;
+            }
+
+            DrawRuntimeInspector(view.World, view.Id, view);
+        }
+
+        public static void DrawRuntimeInspector(
+            EcsWorld world,
+            int entityId,
+            Object logContext = null)
+        {
+            if (world == null || !world.IsIdValid(entityId))
+            {
+                EditorGUILayout.HelpBox("The runtime entity is no longer valid.", MessageType.Warning);
+                return;
+            }
+
             _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
             if (_showComponents)
             {
                 _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
                 EditorGUILayout.Space();
-                DrawRuntimeComponents(view);
+                DrawRuntimeComponents(world, entityId, logContext);
             }
             
             if (GUILayout.Button(_addListExpanded ? "Fold" : "Add Component"))
@@ -212,6 +291,10 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 
                 EditorGUI.indentLevel++;
 
+                EcsComponentInspectorUtility.CollectRuntimeComponentTypes(
+                    world,
+                    entityId,
+                    _runtimeComponentTypes);
                 var componentTypes = IntegrationHelper.ComponentTypes;
                 for (int i = 0; i < componentTypes.Count; i++)
                 {
@@ -221,9 +304,9 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     {
                         continue;
                     }
-                    
+
                     var addableComponentType = componentTypes[i];
-                    if (_onlineBuffer.Any(c => c == addableComponentType))
+                    if (_runtimeComponentTypes.Contains(addableComponentType))
                         continue;
                     
                     EditorGUILayout.BeginHorizontal("box");
@@ -232,12 +315,11 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
                     if (GUILayout.Button("+", GUILayout.Width(25)))
                     {
-                        var methodDefinition = typeof(EntityView)
-                            .GetMethod(nameof(EntityView.AddInspector), BindingFlags.Public | BindingFlags.Instance)
-                            ?.MakeGenericMethod(componentTypes[i]);
-
-                        if (methodDefinition != null)
-                            methodDefinition.Invoke(view, null);
+                        EcsComponentInspectorUtility.TryAddRuntimeComponents(
+                            world,
+                            entityId,
+                            addableComponentType,
+                            logContext);
                     }
 
                     EditorGUILayout.EndHorizontal();
@@ -247,15 +329,13 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             }
         }
 
-        private static List<Type> _onlineBuffer = new();
-        private static void DrawRuntimeComponents(EntityView view)
+        private static readonly HashSet<Type> _runtimeComponentTypes = new();
+        private static readonly List<Type> _onlineBuffer = new();
+        private static void DrawRuntimeComponents(EcsWorld world, int entityId, Object logContext)
         {
-            var world = view.World;
-            var entityId = view.Id;
-
             _onlineBuffer.Clear();
             
-            foreach (var componentId in view.GetMask())
+            foreach (var componentId in world.GetMask(entityId))
             {
                 var componentType = ComponentMapping.GetTypeForId(componentId);
                 if (!string.IsNullOrEmpty(_componentFilter) &&
@@ -287,12 +367,14 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 
                 if (GUILayout.Button("-", GUILayout.Width(20)))
                 {
-                    var methodDefinition = typeof(EntityView)
-                        .GetMethod(nameof(EntityView.Remove), BindingFlags.Public | BindingFlags.Instance)
-                        ?.MakeGenericMethod(_onlineBuffer[i]);
-
-                    if (methodDefinition != null)
-                        methodDefinition.Invoke(view, null);
+                    try
+                    {
+                        world.Remove_Dynamic(_onlineBuffer[i], entityId);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception, logContext);
+                    }
 
                     _onlineBuffer.RemoveAt(i);
                     
