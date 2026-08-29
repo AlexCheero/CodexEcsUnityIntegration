@@ -142,36 +142,67 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
         private void RegisterUnityComponents(EcsWorld world)
         {
-            //it should have at least Transform
-            // if (_unityComponentsBuffer.Count == 0)
-            //     return;
-
-            var component = _unityComponentsBuffer[0];
-            var type = component.GetType();
-            if (!ComponentMapping.HaveType(type))
-                CallStaticCtorForComponentMeta(type);
-            world.AddMultiple_Dynamic(type, _id, component);
-            
-            for (int i = 1; i < _unityComponentsBuffer.Count; i++)
+            var populatedTypes = new BitMask();
+            for (int i = 0; i < _unityComponentsBuffer.Count; i++)
             {
-                component = _unityComponentsBuffer[i];
-                type = _unityComponentsBuffer[i - 1] == component
-                    ? type.BaseType
-                    : _unityComponentsBuffer[i].GetType();
-                if (!ComponentMapping.HaveType(type))
-                    CallStaticCtorForComponentMeta(type);
-                world.AddMultiple_Dynamic(type, _id, component);
+                var component = _unityComponentsBuffer[i];
+                var type = GetUnityComponentType(i);
+                var componentId = EnsureComponentTypeRegistered(type);
+                if (populatedTypes.Check(componentId))
+                    world.AddMultiple_Dynamic(type, _id, component);
+                else
+                {
+                    world.Set_Dynamic(type, _id, component);
+                    populatedTypes.Set(componentId);
+                }
             }
         }
 
-        private void CallStaticCtorForComponentMeta(Type type)
+        private Type GetUnityComponentType(int index)
         {
-            var genericType = typeof(ComponentMeta<>);
-            var specificType = genericType.MakeGenericType(type);
-            
-            // specificType.TypeInitializer?.Invoke(null, null);
-            // fore some reason code above called static ctor twice so I used this code instead
-            RuntimeHelpers.RunClassConstructor(specificType.TypeHandle);
+            var component = _unityComponentsBuffer[index];
+            if (index == 0 || _unityComponentsBuffer[index - 1] != component)
+                return component.GetType();
+            return GetUnityComponentType(index - 1).BaseType;
+        }
+
+        private static int EnsureComponentTypeRegistered(Type type)
+        {
+            if (!ComponentMapping.HaveType(type))
+            {
+                var specificType = typeof(ComponentMeta<>).MakeGenericType(type);
+                RuntimeHelpers.RunClassConstructor(specificType.TypeHandle);
+            }
+            return ComponentMapping.GetIdForType(type);
+        }
+
+        private BitMask BuildDestinationMask(bool includeUnityComponents)
+        {
+            var mask = new BitMask();
+            for (var i = 0; i < _components.Count; i++)
+                mask.Set(_components[i].GetComponentId());
+
+            if (!includeUnityComponents)
+                return mask;
+
+            var seenUnityTypes = new BitMask();
+            for (var i = 0; i < _unityComponentsBuffer.Count; i++)
+            {
+                var type = GetUnityComponentType(i);
+                var componentId = EnsureComponentTypeRegistered(type);
+                if (seenUnityTypes.Check(componentId))
+                {
+                    var multipleType = typeof(MultipleComponents<>).MakeGenericType(type);
+                    mask.Set(EnsureComponentTypeRegistered(multipleType));
+                }
+                else
+                {
+                    seenUnityTypes.Set(componentId);
+                }
+                mask.Set(componentId);
+            }
+
+            return mask;
         }
 
         public int InitAsEntityWithChildren(EcsWorld world)
@@ -189,7 +220,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #endif
             
             _world = world;
-            _id = world.Create();
+            var destinationMask = BuildDestinationMask(true);
+            _id = world.CreateWithComponents(destinationMask);
             _entity = _world.GetById(_id);
 
             for (var i = 0; i < _components.Count; i++)
@@ -202,7 +234,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int CreatePureEntity(EcsWorld world)
         {
-            var eid = world.Create();
+            var destinationMask = BuildDestinationMask(false);
+            var eid = world.CreateWithComponents(destinationMask);
             for (var i = 0; i < _components.Count; i++)
                 _components[i].AddToWorld(world, eid);
             return eid;

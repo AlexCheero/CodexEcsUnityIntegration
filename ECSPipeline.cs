@@ -3,7 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration
@@ -159,6 +161,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
             TickSystemCategory(ESystemCategory.Init);
             foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
                 InitSystemCategory(systemCategory);
+            _world.FlushReactives();
         }
 
         public bool IsPaused { get; private set; }
@@ -232,7 +235,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
             for (int i = 0; i < systems.Length; i++)
             {
                 if (systemScripts[i].Active)
+                {
                     systems[i].Init(_world);
+                    _world.FlushReactives();
+                }
             }
         }
         
@@ -253,7 +259,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 if (isPaused && !systemScripts[i].NonPausable)
                     continue;
                 if (systemScripts[i].Active)
+                {
                     systems[i].Tick(_world);
+                    _world.FlushReactives();
+                }
             }
         }
 

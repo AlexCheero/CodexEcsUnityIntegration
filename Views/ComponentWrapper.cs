@@ -11,6 +11,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     {
         public abstract void AddToWorld(EcsWorld world, int id);
         public abstract Type GetComponentType();
+        public abstract int GetComponentId();
         public abstract IComponent GetBoxedDefaultValue();
         
 #if UNITY_EDITOR
@@ -40,10 +41,20 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public override void AddToWorld(EcsWorld world, int id)
         {
             ComponentMeta<T>.Init(ref _component);
-            world.Add(id, _component);
+            if (!world.Have<T>(id))
+            {
+                world.Add(id, _component);
+                return;
+            }
+
+            if (!ComponentMeta<T>.IsTag)
+                world.Replace(id, _component);
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override Type GetComponentType() => typeof(T);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetComponentId() => ComponentMeta<T>.Id;
 
         /// <summary>
         /// Exposes the serialized prototype value without requiring callers to reflect into
@@ -82,7 +93,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             if (ComponentMeta<T>.IsTag)
                 return;
             ComponentMeta<T>.Init(ref _component);
-            world.Get<T>(eid) = _component;
+            world.Replace(eid, _component);
         }
 #endif
     }

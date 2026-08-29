@@ -32,7 +32,11 @@ public class EntityPreset : ScriptableObject
     
     public int CreatePureEntity(EcsWorld world)
     {
-        var eid = world.Create();
+        var mask = new BitMask();
+        for (var i = 0; i < _components.Count; i++)
+            mask.Set(_components[i].GetComponentId());
+
+        var eid = world.CreateWithComponents(mask);
         for (var i = 0; i < _components.Count; i++)
             _components[i].AddToWorld(world, eid);
         return eid;
