@@ -161,7 +161,6 @@ namespace CodexFramework.CodexEcsUnityIntegration
             TickSystemCategory(ESystemCategory.Init);
             foreach (var systemCategory in (ESystemCategory[])Enum.GetValues(typeof(ESystemCategory)))
                 InitSystemCategory(systemCategory);
-            _world.FlushReactives();
         }
 
         public bool IsPaused { get; private set; }
@@ -236,8 +235,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
             {
                 if (systemScripts[i].Active)
                 {
-                    systems[i].Init(_world);
-                    _world.FlushReactives();
+                    _world.Lock();
+                    try
+                    {
+                        systems[i].Init(_world);
+                    }
+                    finally
+                    {
+                        _world.Unlock();
+                    }
                 }
             }
         }
@@ -260,8 +266,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     continue;
                 if (systemScripts[i].Active)
                 {
-                    systems[i].Tick(_world);
-                    _world.FlushReactives();
+                    _world.Lock();
+                    try
+                    {
+                        systems[i].Tick(_world);
+                    }
+                    finally
+                    {
+                        _world.Unlock();
+                    }
                 }
             }
         }
