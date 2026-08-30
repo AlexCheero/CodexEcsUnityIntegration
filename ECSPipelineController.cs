@@ -69,9 +69,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
 
         public void CreateEntityWithComponent<T>(T comp = default) => _world.Add(_world.Create(), comp);
 
-        public void ReRunInit()
+        public void ReRunInit(bool force = false)
         {
-            CurrentPipelineBehaviour.RunInitSystems();
+            CurrentPipelineBehaviour.RunInitSystems(force);
         }
     }
 }

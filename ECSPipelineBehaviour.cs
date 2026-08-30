@@ -150,9 +150,9 @@ namespace CodexFramework.CodexEcsUnityIntegration
             StartLateFixedUpdateSystemsIfAny();
         }
 
-        public void RunInitSystems()
+        public void RunInitSystems(bool force = false)
         {
-            TickSystemCategory(ESystemCategory.Init);
+            TickSystemCategory(ESystemCategory.Init, force);
             foreach (var systemCategory in IntegrationHelper.SystemCategories)
                 InitSystemCategory(systemCategory);
         }
