@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -19,21 +19,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private static string _componentFilter;
         private static readonly GUIContent ComponentMenuContent = new("\u22ee", "Component actions");
         
-        private static readonly Dictionary<Type, RuntimeComponentProxy> _proxies = new();
-        private static readonly Dictionary<Type, SerializedObject> _serializedProxies = new();
-
-        public static void CleanProxiesCache()
-        {
-            foreach (var proxy in _proxies.Values)
-            {
-                if (proxy != null)
-                    Object.DestroyImmediate(proxy);
-            }
-
-            _proxies.Clear();
-            _serializedProxies.Clear();
-        }
-
         private static readonly List<(string TypeName, int Index, Type ComponentType, SerializedProperty ComponentProp)> _offlineBuffer = new();
         private static readonly Dictionary<string, bool> _offlineFoldouts = new();
         private static readonly Dictionary<Type, bool> _hasSerializableFieldsCache = new();
@@ -250,202 +235,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             menu.ShowAsContext();
         }
 
-        public static void DrawRuntimeInspector(EntityView view)
-        {
-            if (view == null || !view.IsViewValid())
-            {
-                EditorGUILayout.HelpBox(
-                    "EntityView is not attached to a valid runtime entity.",
-                    MessageType.Info);
-                return;
-            }
-
-            DrawRuntimeInspector(view.World, view.Id, view);
-        }
-
-        public static void DrawRuntimeInspector(
-            EcsWorld world,
-            int entityId,
-            Object logContext = null)
-        {
-            if (world == null || !world.IsIdValid(entityId))
-            {
-                EditorGUILayout.HelpBox("The runtime entity is no longer valid.", MessageType.Warning);
-                return;
-            }
-
-            _showComponents = EditorGUILayout.Foldout(_showComponents, "Components", true);
-            if (_showComponents)
-            {
-                _componentFilter = EditorGUILayout.TextField("Search", _componentFilter);
-                EditorGUILayout.Space();
-                DrawRuntimeComponents(world, entityId, logContext);
-            }
-            
-            if (GUILayout.Button(_addListExpanded ? "Fold" : "Add Component"))
-                _addListExpanded = !_addListExpanded;
-            if (_addListExpanded)
-            {
-                _addFilter = EditorGUILayout.TextField("Search", _addFilter);
-                EditorGUILayout.Space();
-                
-                EditorGUI.indentLevel++;
-
-                EcsComponentInspectorUtility.CollectRuntimeComponentTypes(
-                    world,
-                    entityId,
-                    _runtimeComponentTypes);
-                var componentTypes = IntegrationHelper.ComponentTypes;
-                for (int i = 0; i < componentTypes.Count; i++)
-                {
-                    if (!string.IsNullOrEmpty(_addFilter)
-                        && !componentTypes[i].Name
-                            .Contains(_addFilter, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var addableComponentType = componentTypes[i];
-                    if (_runtimeComponentTypes.Contains(addableComponentType))
-                        continue;
-                    
-                    EditorGUILayout.BeginHorizontal("box");
-
-                    EditorGUILayout.LabelField(addableComponentType.Name);
-
-                    if (GUILayout.Button("+", GUILayout.Width(25)))
-                    {
-                        EcsComponentInspectorUtility.TryAddRuntimeComponents(
-                            world,
-                            entityId,
-                            addableComponentType,
-                            logContext);
-                    }
-
-                    EditorGUILayout.EndHorizontal();
-                }
-                
-                EditorGUI.indentLevel--;
-            }
-        }
-
-        private static readonly HashSet<Type> _runtimeComponentTypes = new();
-        private static readonly List<Type> _onlineBuffer = new();
-        private static void DrawRuntimeComponents(EcsWorld world, int entityId, Object logContext)
-        {
-            _onlineBuffer.Clear();
-            
-            foreach (var componentId in world.GetMask(entityId))
-            {
-                var componentType = ComponentMapping.GetTypeForId(componentId);
-                if (!string.IsNullOrEmpty(_componentFilter) &&
-                    !componentType.Name.Contains(_componentFilter, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (typeof(IComponent).IsAssignableFrom(componentType))
-                    _onlineBuffer.Add(ComponentMapping.GetTypeForId(componentId));
-            }
-            
-            _onlineBuffer.Sort((t1, t2) => string.Compare(t1.Name, t2.Name, StringComparison.Ordinal));
-
-            DrawFoldExpandButtons(
-                () => SetAllRuntimeFoldouts(true),
-                () => SetAllRuntimeFoldouts(false));
-
-            EditorGUI.indentLevel++;
-            for (int i = 0; i < _onlineBuffer.Count; i++)
-            {
-                EditorGUILayout.BeginHorizontal();
-                
-                EditorGUILayout.BeginVertical();
-                
-                DrawRuntimeComponent(world, entityId, _onlineBuffer[i]);
-                
-                EditorGUILayout.EndVertical();
-                
-                if (GUILayout.Button("-", GUILayout.Width(20)))
-                {
-                    try
-                    {
-                        world.Remove_Dynamic(_onlineBuffer[i], entityId);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogException(exception, logContext);
-                    }
-
-                    _onlineBuffer.RemoveAt(i);
-                    
-                    break;
-                }
-                
-                EditorGUILayout.EndHorizontal();
-            }
-            
-            EditorGUI.indentLevel--;
-        }
-
-        private static void DrawRuntimeComponent(EcsWorld world, int entityId, Type componentType)
-        {
-            if (!_proxies.TryGetValue(componentType, out var proxy))
-            {
-                proxy = ScriptableObject.CreateInstance<RuntimeComponentProxy>();
-                proxy.hideFlags = HideFlags.DontSave;
-
-                _proxies[componentType] = proxy;
-                _serializedProxies[componentType] = new SerializedObject(proxy);
-            }
-
-            //TODO: cache
-            var wrapperType = typeof(ComponentWrapper<>).MakeGenericType(componentType);
-            if (proxy.Value == null || proxy.Value.GetType() != wrapperType)
-            {
-                proxy.Value = (ComponentWrapper)Activator.CreateInstance(wrapperType);
-            }
-
-            // ===== READ FROM WORLD =====
-            proxy.Value.ReadFromWorld(world, entityId);
-
-            var so = _serializedProxies[componentType];
-            so.Update();
-
-            var fields = componentType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            var isTag = fields.Length == 0 && componentType.IsValueType && !componentType.IsEnum;
-            if (isTag)
-            {
-                EditorGUILayout.LabelField(componentType.Name);
-            }
-            else
-            {
-                proxy.Value.IsExpanded = EditorGUILayout.Foldout(proxy.Value.IsExpanded, componentType.Name, true);
-                if (proxy.Value.IsExpanded)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUI.BeginChangeCheck();
-
-                    // Находим поле Value (wrapper)
-                    var wrapperProp = so.FindProperty("Value");
-
-                    // А внутри него — реальное поле компонента
-                    var componentProp = wrapperProp.FindPropertyRelative("_component");
-
-                    // Рисуем ТОЛЬКО поля компонента
-                    if (componentProp != null)
-                        DrawComponentFields(componentProp, componentType);
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        so.ApplyModifiedProperties();
-                        proxy.Value.WriteToWorld(world, entityId);
-                    }
-                    
-                    EditorGUI.indentLevel--;
-                }
-            }
-        }
-
         private static readonly Dictionary<Type, bool> _hasCustomDrawerCache = new();
 
         /// <summary>
@@ -453,7 +242,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         /// visible children only — PropertyField on the whole _component can error on
         /// non-serializable fields (HashSet, Dictionary, …) under SerializeReference.
         /// </summary>
-        private static void DrawComponentFields(SerializedProperty componentProp, Type componentType)
+        internal static void DrawComponentFields(SerializedProperty componentProp, Type componentType)
         {
             if (HasCustomPropertyDrawer(componentType))
                 EditorGUILayout.PropertyField(componentProp, GUIContent.none, true);
@@ -512,15 +301,13 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
         private static void DrawChildren(SerializedProperty property)
         {
-            var copy = property.Copy();
-            var end = copy.GetEndProperty();
-
-            copy.NextVisible(true);
-
-            while (!SerializedProperty.EqualContents(copy, end))
+            using var copy = property.Copy();
+            using var end = copy.GetEndProperty();
+            var hasNext = copy.NextVisible(true);
+            while (hasNext && !SerializedProperty.EqualContents(copy, end))
             {
                 EditorGUILayout.PropertyField(copy, true);
-                copy.NextVisible(false);
+                hasNext = copy.NextVisible(false);
             }
         }
 
@@ -545,28 +332,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             }
         }
 
-        private static void SetAllRuntimeFoldouts(bool expanded)
-        {
-            for (int i = 0; i < _onlineBuffer.Count; i++)
-            {
-                var componentType = _onlineBuffer[i];
-                if (!_proxies.TryGetValue(componentType, out var proxy))
-                {
-                    proxy = ScriptableObject.CreateInstance<RuntimeComponentProxy>();
-                    proxy.hideFlags = HideFlags.DontSave;
-                    _proxies[componentType] = proxy;
-                    _serializedProxies[componentType] = new SerializedObject(proxy);
-                }
-
-                var wrapperType = typeof(ComponentWrapper<>).MakeGenericType(componentType);
-                if (proxy.Value == null || proxy.Value.GetType() != wrapperType)
-                    proxy.Value = (ComponentWrapper)Activator.CreateInstance(wrapperType);
-
-                proxy.Value.IsExpanded = expanded;
-            }
-        }
-
-        private static bool HasUnitySerializableFields(Type type)
+        internal static bool HasUnitySerializableFields(Type type)
         {
             if (type == null)
                 return false;
@@ -589,9 +355,10 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             return hasSerializable;
         }
 
-        private static bool IsUnitySerializableField(FieldInfo field)
+        internal static bool IsUnitySerializableField(FieldInfo field)
         {
-            if (field.IsNotSerialized || field.GetCustomAttribute<NonSerializedAttribute>() != null)
+            if (field.IsStatic || field.IsInitOnly || field.IsNotSerialized ||
+                field.GetCustomAttribute<NonSerializedAttribute>() != null)
                 return false;
             if (!field.IsPublic && field.GetCustomAttribute<SerializeField>() == null
                 && field.GetCustomAttribute<SerializeReference>() == null)

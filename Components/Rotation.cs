@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using CodexECS;
 using UnityEngine;
@@ -6,6 +7,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
     [MovedFrom(true, sourceNamespace: "TransformProxy", sourceAssembly: "Assembly-CSharp")]
+    [Serializable]
     public struct Rotation : IComponent
     {
         public Quaternion rotation;

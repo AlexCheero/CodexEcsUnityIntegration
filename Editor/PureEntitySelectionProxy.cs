@@ -49,19 +49,20 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
     [CustomEditor(typeof(PureEntitySelectionProxy))]
     internal sealed class PureEntitySelectionProxyEditor : UnityEditor.Editor
     {
-        private void OnEnable() => EditorApplication.update += Repaint;
+        private RuntimeEntityInspector _inspector;
 
-        private void OnDisable()
-        {
-            EditorApplication.update -= Repaint;
-            EntityEditorHelper.CleanProxiesCache();
-        }
+        private void OnEnable() => _inspector = new RuntimeEntityInspector();
+        private void OnDisable() => _inspector.Dispose();
+
+        // Unity schedules visible inspector refreshes instead of repainting every editor tick.
+        public override bool RequiresConstantRepaint() => ((PureEntitySelectionProxy)target).IsPureEntityValid;
 
         public override void OnInspectorGUI()
         {
             var proxy = (PureEntitySelectionProxy)target;
             if (!proxy.IsEntityValid)
             {
+                _inspector.Dispose();
                 EditorGUILayout.HelpBox(
                     "This ECS entity no longer exists. Select another entity in the Pure Entity Hierarchy.",
                     MessageType.Warning);
@@ -71,6 +72,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             EditorGUILayout.LabelField("Entity ID", proxy.EntityId.ToString());
             if (!proxy.World.Have<PureEntity>(proxy.EntityId))
             {
+                _inspector.Dispose();
                 EditorGUILayout.HelpBox(
                     $"Entity {proxy.EntityId} no longer has {nameof(PureEntity)}.",
                     MessageType.Warning);
@@ -86,7 +88,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     MessageType.Info);
             }
 
-            EntityEditorHelper.DrawRuntimeInspector(proxy.World, proxy.EntityId, proxy);
+            _inspector.Draw(proxy.World, proxy.EntityId, proxy);
         }
     }
 }

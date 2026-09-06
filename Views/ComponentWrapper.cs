@@ -17,9 +17,6 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #if UNITY_EDITOR
         public const string ComponentPropertyName = "_component";
         
-        [NonSerialized]
-        public bool IsExpanded;
-        
         public abstract void InitFromComponent(IComponent component);
         public abstract void OnAdded(UnityEngine.Object owner);
         public abstract void ReadFromWorld(EcsWorld world, int eid);
@@ -92,8 +89,9 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             if (ComponentMeta<T>.IsTag)
                 return;
-            ComponentMeta<T>.Init(ref _component);
-            world.Replace(eid, _component);
+            // Inspector edits mutate an existing component, just like a ref field write.
+            // Initialization and replacement cleanup can reset values or dispose live state.
+            world.Get<T>(eid) = _component;
         }
 #endif
     }

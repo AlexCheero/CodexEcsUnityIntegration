@@ -4,12 +4,6 @@ using UnityEngine;
 
 namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 {
-    public class RuntimeComponentProxy : ScriptableObject
-    {
-        [SerializeReference]
-        public ComponentWrapper Value;
-    }
-    
     [CustomEditor(typeof(EntityView))]
     public class EntityViewEditor : UnityEditor.Editor
     {
@@ -17,15 +11,14 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private SerializedProperty _forceInitProp;
         
         private EntityView _view;
+        private RuntimeEntityInspector _runtimeInspector;
         
         private void OnEnable()
         {
-            EditorApplication.update += Repaint;
-            
             _componentsProp = serializedObject.FindProperty(EntityView.ComponentsPropertyName);
             _forceInitProp = serializedObject.FindProperty(EntityView.ForceInitPropertyName);
             
-            EntityEditorHelper.CleanProxiesCache();
+            _runtimeInspector = new RuntimeEntityInspector();
             _view = (EntityView)target;
         }
 
@@ -36,17 +29,21 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             EditorGUILayout.PropertyField(_forceInitProp);
             
             if (!_view.IsViewValid())
+            {
+                _runtimeInspector.Dispose();
                 EntityEditorHelper.DrawComponentsInspector(_componentsProp, _view.Components, _view);
+            }
             else
-                EntityEditorHelper.DrawRuntimeInspector(_view);
+                _runtimeInspector.Draw(_view.World, _view.Id, _view);
 
             serializedObject.ApplyModifiedProperties();
         }
 
         private void OnDisable()
         {
-            EditorApplication.update -= Repaint;
-            EntityEditorHelper.CleanProxiesCache();
+            _runtimeInspector.Dispose();
         }
+
+        public override bool RequiresConstantRepaint() => _view != null && _view.IsViewValid();
     }
 }

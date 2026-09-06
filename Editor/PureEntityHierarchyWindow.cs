@@ -61,7 +61,6 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             SceneView.duringSceneGui -= DuringSceneGui;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             ReleaseSelectionProxy();
-            EntityEditorHelper.CleanProxiesCache();
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -618,6 +617,13 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
             internal void SetEntities(IReadOnlyList<EntityRecord> entities)
             {
+                var unchanged = _entities.Count == entities.Count;
+                for (var i = 0; unchanged && i < entities.Count; i++)
+                    unchanged = _entities[i].Id == entities[i].Id &&
+                                _entities[i].Entity.Val == entities[i].Entity.Val;
+                if (unchanged)
+                    return;
+
                 _entities.Clear();
                 for (var i = 0; i < entities.Count; i++)
                     _entities.Add(entities[i]);
