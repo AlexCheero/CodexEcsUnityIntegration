@@ -53,6 +53,108 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor.Tests
         }
 
         [Test]
+        public void SourcePreset_UsesWorldAndEntityGenerationAndSupportsPresetFreeEntities()
+        {
+            var preset = CreatePreset();
+            try
+            {
+                var world = new EcsWorld();
+                var id = preset.CreatePureEntity(world);
+                var entity = world.GetById(id);
+                Assert.IsTrue(EntityPreset.TryGetSourcePreset(world, id, in entity, out var source));
+                Assert.AreSame(preset, source);
+                var otherWorld = new EcsWorld();
+                var otherId = otherWorld.CreateWithComponents(new BitMask(ComponentMeta<PureEntity>.Id));
+                var otherEntity = otherWorld.GetById(otherId);
+                Assert.IsFalse(EntityPreset.TryGetSourcePreset(otherWorld, otherId, in otherEntity, out _));
+                world.Delete(id);
+                Assert.IsFalse(EntityPreset.TryGetSourcePreset(world, id, in entity, out _));
+                Assert.AreEqual(id, world.CreateWithComponents(new BitMask(ComponentMeta<PureEntity>.Id)));
+                var recycled = world.GetById(id);
+                Assert.IsFalse(EntityPreset.TryGetSourcePreset(world, id, in recycled, out _));
+                Assert.IsFalse(RuntimeEntityPresetUtility.TryApplyComponent(
+                    world, id, in entity, typeof(PureEntity), out _));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(preset); }
+        }
+
+        [Test]
+        public void ApplyToPreset_CopiesOnlySelectedSerializedComponentAndSupportsUndo()
+        {
+            var editable = new ComponentWrapper<Editable>();
+            editable.InitFromComponent(new Editable { Value = 10, Settings = new() { Amount = 20 } });
+            var position = new ComponentWrapper<Position>();
+            position.InitFromComponent(new Position { position = Vector3.one });
+            var preset = CreatePreset(editable, position);
+            try
+            {
+                var world = new EcsWorld();
+                var id = preset.CreatePureEntity(world);
+                var sibling = preset.CreatePureEntity(world);
+                var entity = world.GetById(id);
+                world.Get<Editable>(id) = new Editable
+                {
+                    Value = 42,
+                    Settings = new() { Amount = 99, RuntimeTick = 100 },
+                    Items = new() { new() { Amount = 17 } },
+                    RuntimeCache = new() { 123 }
+                };
+                world.Get<Position>(id).position = Vector3.zero;
+                Undo.IncrementCurrentGroup();
+                Assert.IsTrue(RuntimeEntityPresetUtility.TryApplyComponent(
+                    world, id, in entity, typeof(Editable), out var error), error);
+                Undo.FlushUndoRecordObjects();
+                Assert.IsTrue(preset.TryGetComponentDefaultValue<Editable>(out var saved));
+                Assert.AreEqual(42, saved.Value);
+                Assert.AreEqual(99, saved.Settings.Amount);
+                Assert.AreEqual(0, saved.Settings.RuntimeTick);
+                Assert.IsNull(saved.RuntimeCache);
+                Assert.AreNotSame(world.Get<Editable>(id).Settings, saved.Settings);
+                Assert.AreNotSame(world.Get<Editable>(id).Items, saved.Items);
+                Assert.AreEqual(10, world.Get<Editable>(sibling).Value);
+                Assert.AreEqual(20, world.Get<Editable>(sibling).Settings.Amount);
+                Assert.IsTrue(preset.TryGetComponentDefaultValue<Position>(out var savedPosition));
+                Assert.AreEqual(Vector3.one, savedPosition.position);
+                world.Get<Editable>(id).Settings.Amount = -1;
+                Assert.AreEqual(99, saved.Settings.Amount);
+                Undo.PerformUndo();
+                Assert.IsTrue(preset.TryGetComponentDefaultValue<Editable>(out var restored));
+                Assert.AreEqual(10, restored.Value);
+                Assert.AreEqual(20, restored.Settings.Amount);
+                Assert.AreEqual(42, world.Get<Editable>(id).Value);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(preset); }
+        }
+
+        [Test]
+        public void ApplyToPreset_CanAddRuntimeComponentWithoutCopyingOtherRuntimeComponents()
+        {
+            var preset = CreatePreset();
+            try
+            {
+                var world = new EcsWorld();
+                var id = preset.CreatePureEntity(world);
+                var entity = world.GetById(id);
+                world.Add(id, new Position { position = new Vector3(2, 3, 4) });
+                world.Add<Required>(id);
+                Assert.IsTrue(RuntimeEntityPresetUtility.TryApplyComponent(
+                    world, id, in entity, typeof(Position), out var error), error);
+                Assert.AreEqual(1, preset.Components.Count);
+                Assert.IsTrue(preset.TryGetComponentDefaultValue<Position>(out var saved));
+                Assert.AreEqual(new Vector3(2, 3, 4), saved.position);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(preset); }
+        }
+
+        private static EntityPreset CreatePreset(params ComponentWrapper[] components)
+        {
+            var preset = ScriptableObject.CreateInstance<EntityPreset>();
+            typeof(EntityPreset).GetField("_components", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(preset, new List<ComponentWrapper>(components));
+            return preset;
+        }
+
+        [Test]
         public void RuntimeInspector_EditIsIsolatedFromPresetAndSiblingEntity()
         {
             var preset = ScriptableObject.CreateInstance<EntityPreset>();

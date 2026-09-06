@@ -17,6 +17,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         private EcsWorld _world;
         private Entity _entity;
         private int _entityId;
+        private EntityPreset _sourcePreset;
         private string _filter = "";
         private string _addFilter = "";
         private bool _showComponents = true;
@@ -32,6 +33,11 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 _entity = entity;
                 _entityId = entityId;
             }
+
+            EntityPreset.TryGetSourcePreset(world, entityId, in entity, out _sourcePreset);
+            if (_sourcePreset != null)
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUILayout.ObjectField("Source Preset", _sourcePreset, typeof(EntityPreset), false);
 
             // Only enumerate this entity's mask; no world scan or wrapper creation for tags.
             _components.Clear();
@@ -131,6 +137,14 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 EditorGUILayout.HelpBox($"Unity cannot serialize {type.Name} for inspection.", MessageType.Info);
             if (buffer.Commit()) SceneView.RepaintAll();
             EditorGUI.indentLevel--;
+            if (_sourcePreset != null && buffer.ComponentProperty != null &&
+                GUILayout.Button(new GUIContent("Apply to Preset",
+                    $"Save this component's current serialized values to {_sourcePreset.name}.")))
+            {
+                if (!RuntimeEntityPresetUtility.TryApplyComponent(
+                        _world, _entityId, in _entity, type, out var error))
+                    Debug.LogError(error, _sourcePreset);
+            }
         }
 
         private void SetFoldouts(bool expanded)
@@ -154,6 +168,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             _world = null;
             _entity = default;
             _entityId = 0;
+            _sourcePreset = null;
         }
     }
 }
