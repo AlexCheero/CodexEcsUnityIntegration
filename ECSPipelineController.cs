@@ -26,6 +26,12 @@ namespace CodexFramework.CodexEcsUnityIntegration
             
             _world = new EcsWorld();
 
+            foreach (var systemsOverride in FindObjectsByType<SystemsOverride>(FindObjectsSortMode.InstanceID))
+            {
+                if (systemsOverride.isActiveAndEnabled)
+                    systemsOverride.ApplyTo(CurrentPipelineBehaviour);
+            }
+
             foreach (var pipeline in _pipelines)
             {
                 pipeline.Init(_world);
