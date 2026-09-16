@@ -33,6 +33,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _component;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => _component = value;
         }
 
         public override void AddToWorld(EcsWorld world, int id)
