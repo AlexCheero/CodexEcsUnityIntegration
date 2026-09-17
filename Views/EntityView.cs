@@ -274,16 +274,19 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public void DeleteFromWorld()
         {
-            _world.Delete(_id);
+            // A checkout can be canceled before initialization, or its entity can
+            // already have been deleted and its id reused by another entity.
+            var world = _world;
+            var id = _id;
+            var isValid = IsValid;
+            _world = null;
             _id = -1;
             _entity = EntityExtension.NullEntity;
+            if (isValid)
+                world.Delete(id);
         }
 
-        void OnDestroy()
-        {
-            if (_world != null && _world.IsEntityValid(_entity))
-                _world.Delete(_id);
-        }
+        void OnDestroy() => DeleteFromWorld();
 
         public override string ToString() => World.DebugEntity(Id, true);
     }
