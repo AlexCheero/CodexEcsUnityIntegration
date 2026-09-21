@@ -34,13 +34,18 @@ namespace CodexFramework.CodexEcsUnityIntegration
             {
                 systems ??= Array.Empty<SystemEntry>();
                 var previousLength = systems.Length;
+                // A new script may be imported before its type is compiled. Keep authored
+                // registrations until Unity can resolve them instead of deleting the system.
                 Utils.RemoveEntries(ref systems, entry =>
-                    entry.Script == null || entry.Script.GetClass() == null);
+                    entry.Script == null && string.IsNullOrWhiteSpace(entry.Name));
                 isDirty |= systems.Length != previousLength;
 
                 for (var i = 0; i < systems.Length; i++)
                 {
-                    var typeName = systems[i].Script.GetClass().FullName;
+                    var type = systems[i].Script != null ? systems[i].Script.GetClass() : null;
+                    if (type == null)
+                        continue;
+                    var typeName = type.FullName;
                     if (string.Equals(systems[i].Name, typeName, StringComparison.Ordinal))
                         continue;
 

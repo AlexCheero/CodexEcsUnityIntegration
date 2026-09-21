@@ -27,7 +27,7 @@ public class EntityPreset : ScriptableObject
         return preset != null;
     }
     
-    private void OnValidate() => EntityValidator.ValidateComponents(_components);
+    private void OnValidate() => EntityValidator.ValidateComponents(this, _components);
 #endif
     
     [SerializeReference]

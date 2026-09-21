@@ -10,10 +10,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 #if UNITY_EDITOR
     public static class EntityValidator
     {
-        public static void ValidateComponents(List<ComponentWrapper> components)
+        public static void ValidateComponents(UnityEngine.Object owner, List<ComponentWrapper> components)
         {
             // PasteComponentAsNew can invoke OnValidate before _components is assigned.
             if (components == null)
+                return;
+            // Asset import can precede compilation of a newly authored component. Unity
+            // retains its serialized data, but removing the null slot loses that reference.
+            if (UnityEditor.SerializationUtility.HasManagedReferencesWithMissingTypes(owner))
                 return;
             for (int i = components.Count - 1; i >= 0; i--)
             {
@@ -60,7 +64,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddInspector<T>() => Add<T>();
 
-        private void OnValidate() => EntityValidator.ValidateComponents(_components);
+        private void OnValidate() => EntityValidator.ValidateComponents(this, _components);
 #endif
         
         [SerializeReference]
