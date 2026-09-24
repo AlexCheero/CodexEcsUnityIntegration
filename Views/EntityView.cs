@@ -181,6 +181,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             return ComponentMapping.GetIdForType(type);
         }
 
+        public void PrewarmComponentTypes() => BuildDestinationMask(true);
+
         private BitMask BuildDestinationMask(bool includeUnityComponents)
         {
             var mask = new BitMask();
