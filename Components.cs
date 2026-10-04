@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Components
 {
+    public struct ControllerGroundHitComponent : IComponent
+    {
+        public Vector3 contactPoint;
+        public Vector3 normal;
+        public Collider otherCollider;
+    }
+
     public struct ControllerColliderHitComponent : IComponent
     {
         public Vector3 contactPoint;

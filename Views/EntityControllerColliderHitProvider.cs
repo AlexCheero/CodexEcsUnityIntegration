@@ -8,6 +8,11 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
     {
         void OnControllerColliderHit(ControllerColliderHit hit)
         {
+            RecordHit(hit.collider, hit.point, hit.normal, hit.rigidbody);
+        }
+
+        internal void RecordHit(Collider otherCollider, Vector3 point, Vector3 normal, Rigidbody rb)
+        {
             if (!view.IsValid)
             {
 #if DEBUG
@@ -16,13 +21,25 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
                 return;
             }
             
+            // Preserve the flattest supporting contact independently of wall/edge collisions.
+            if (normal.y >= 0.5f)
+            {
+                ref var ground = ref view.GetOrAdd<ControllerGroundHitComponent>();
+                if (normal.y >= ground.normal.y)
+                {
+                    ground.otherCollider = otherCollider;
+                    ground.contactPoint = point;
+                    ground.normal = normal;
+                }
+            }
+
             var collisionComponent = new ControllerColliderHitComponent
             {
                 collider = thisCollider,
-                otherCollider = hit.collider,
-                contactPoint = hit.point,
-                normal = hit.normal,
-                rb = hit.rigidbody
+                otherCollider = otherCollider,
+                contactPoint = point,
+                normal = normal,
+                rb = rb
             };
             if (view.Have<ControllerColliderHitComponent>())
             {
