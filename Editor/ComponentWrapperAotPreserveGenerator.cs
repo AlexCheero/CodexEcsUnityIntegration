@@ -1,40 +1,37 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using CodexECS;
 using CodexFramework.CodexEcsUnityIntegration.Views;
 using UnityEditor;
 using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace CodexFramework.CodexEcsUnityIntegration.Editor
 {
     /// <summary>
     /// Emits compile-time typeof(ComponentWrapper&lt;T&gt;) anchors for all IComponent types
-    /// so IL2CPP does not strip closed generics. Runs on player build and via menu — not a live source generator.
+    /// so IL2CPP does not strip closed generics. Runs before player script compilation and via menu.
     /// </summary>
-    public sealed class ComponentWrapperAotPreserveGenerator : IPreprocessBuildWithReport
+    public sealed class ComponentWrapperAotPreserveGenerator : BuildPlayerProcessor
     {
         public const string GeneratedAssetPath =
             "Assets/Scripts/Generated/ComponentWrapperAotPreserve.cs";
 
         private const string MenuPath = "CodexEcsUnityIntegration/Generate ComponentWrapper AOT Preserve";
 
-        public int callbackOrder => -1000;
+        public override int callbackOrder => -1000;
 
-        public void OnPreprocessBuild(BuildReport report)
+        public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
             if (!TryGenerate(out var changed, out var error))
                 throw new BuildFailedException($"ComponentWrapper AOT preserve generation failed: {error}");
             if (changed)
             {
-                AssetDatabase.Refresh();
-                throw new BuildFailedException(
-                    "ComponentWrapper AOT preserve file was outdated and has been regenerated. Build again.");
+                AssetDatabase.ImportAsset(GeneratedAssetPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[ComponentWrapperAotPreserve] Updated {GeneratedAssetPath} before player script compilation.");
             }
         }
 
@@ -65,7 +62,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
                 var previous = File.Exists(fullPath) ? File.ReadAllText(fullPath) : null;
-                if (string.Equals(previous, content, StringComparison.Ordinal))
+                if (string.Equals(previous?.Replace("\r\n", "\n"), content, StringComparison.Ordinal))
                     return true;
                 File.WriteAllText(fullPath, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 changed = true;
@@ -86,19 +83,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             {
                 if (!ShouldScanAssembly(assembly))
                     continue;
-                Type[] types;
-                try
-                {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException e)
-                {
-                    types = e.Types.Where(t => t != null).ToArray();
-                }
-                catch
-                {
-                    continue;
-                }
+                var types = assembly.GetTypes();
                 foreach (var type in types)
                 {
                     if (type == null || type.IsInterface || type.IsAbstract || type.IsGenericTypeDefinition)
@@ -149,22 +134,28 @@ namespace CodexFramework.CodexEcsUnityIntegration.Editor
             sb.AppendLine("namespace CodexFramework.CodexEcsUnityIntegration");
             sb.AppendLine("{");
             sb.AppendLine("    /// <summary>IL2CPP anchors for closed ComponentWrapper&lt;T&gt; generics.</summary>");
+            sb.AppendLine("    [UnityEngine.Scripting.Preserve]");
             sb.AppendLine("    static class ComponentWrapperAotPreserve");
             sb.AppendLine("    {");
+            sb.AppendLine("        [UnityEngine.Scripting.Preserve]");
+            sb.AppendLine("        private static readonly System.Type[] Types;");
+            sb.AppendLine();
             sb.AppendLine("        static ComponentWrapperAotPreserve()");
             sb.AppendLine("        {");
+            sb.AppendLine("            Types = new System.Type[]");
+            sb.AppendLine("            {");
             foreach (var type in componentTypes)
             {
                 var name = GetTypeDisplayName(type);
-                sb.Append("            _ = typeof(ComponentWrapper<");
+                sb.Append("                typeof(ComponentWrapper<");
                 sb.Append(name);
-                sb.AppendLine(">);");
+                sb.AppendLine(">),");
             }
+            sb.AppendLine("            };");
             sb.AppendLine("        }");
             sb.AppendLine("    }");
             sb.AppendLine("}");
-            sb.AppendLine();
-            return sb.ToString();
+            return sb.ToString().Replace("\r\n", "\n");
         }
 
         private static string GetTypeDisplayName(Type type)
