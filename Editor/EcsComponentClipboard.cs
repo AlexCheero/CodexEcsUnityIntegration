@@ -17,6 +17,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
     {
         private static Type _componentType;
         private static string _serializedWrapper;
+        private static Dictionary<string, Object> _objectReferences;
 
         internal static bool HasComponent =>
             _componentType != null && !string.IsNullOrEmpty(_serializedWrapper);
@@ -27,6 +28,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         {
             _componentType = null;
             _serializedWrapper = null;
+            _objectReferences = null;
         }
 
         internal static bool TryCopy(ComponentWrapper source, out string error)
@@ -50,8 +52,19 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     return false;
                 }
 
+                // JSON alone cannot retain unsaved scene references inside managed references.
+                var references = new Dictionary<string, Object>();
+                using (var serialized = new SerializedObject(proxy))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                        if (property.propertyType == SerializedPropertyType.ObjectReference &&
+                            property.propertyPath.StartsWith("Value.", StringComparison.Ordinal))
+                            references.Add(property.propertyPath, property.objectReferenceValue);
+                }
                 _componentType = sourceType;
                 _serializedWrapper = json;
+                _objectReferences = references;
                 return true;
             }
             catch (Exception exception)
@@ -81,6 +94,12 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             {
                 proxy.Value = CreateEmptyWrapper(_componentType);
                 EditorJsonUtility.FromJsonOverwrite(_serializedWrapper, proxy);
+                using (var serialized = new SerializedObject(proxy))
+                {
+                    foreach (var reference in _objectReferences)
+                        serialized.FindProperty(reference.Key).objectReferenceValue = reference.Value;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
                 if (proxy.Value == null)
                 {
                     error = $"Unity could not deserialize ECS component '{_componentType.Name}'.";
