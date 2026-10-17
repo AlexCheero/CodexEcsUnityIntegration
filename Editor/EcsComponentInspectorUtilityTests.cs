@@ -328,10 +328,9 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor.Tests
 
         private static void InitializeEmptyComponentList(EntityView view)
         {
-            var serializedView = new SerializedObject(view);
-            serializedView.Update();
-            serializedView.FindProperty(EntityView.ComponentsPropertyName).ClearArray();
-            serializedView.ApplyModifiedPropertiesWithoutUndo();
+            typeof(EntityView).GetField(EntityView.ComponentsPropertyName,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(view, new List<ComponentWrapper>());
         }
     }
 }
