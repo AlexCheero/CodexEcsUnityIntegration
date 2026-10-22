@@ -44,7 +44,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 
         internal bool IsValid =>
             PureEntityEditorUtility.IsEntityReferenceValid(_world, _entityId, in _entity) &&
-            _world.GetMask(_entityId).Check(_componentId);
+            _world.Have(_componentId, _entityId);
 
         internal void Refresh()
         {

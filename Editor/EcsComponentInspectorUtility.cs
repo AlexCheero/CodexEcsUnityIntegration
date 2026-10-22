@@ -12,6 +12,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 {
     internal static class EcsComponentInspectorUtility
     {
+        private static BitMask s_entityMaskBuffer;
+
         private const BindingFlags StaticMembers =
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -227,7 +229,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                     try
                     {
                         var componentId = ComponentMapping.GetIdForType(componentType);
-                        if (world.GetMask(entityId).Check(componentId))
+                        if (world.Have(componentId, entityId))
                             world.Remove_Dynamic(componentType, entityId);
                     }
                     catch (Exception rollbackException)
@@ -260,7 +262,9 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             if (world == null || !world.IsIdValid(entityId))
                 return;
 
-            foreach (var componentId in world.GetMask(entityId))
+            // Only the selected entity's inspector asks: every registered type is tested once per repaint.
+            world.CollectMask(entityId, ref s_entityMaskBuffer);
+            foreach (var componentId in s_entityMaskBuffer)
             {
                 var componentType = ComponentMapping.GetTypeForId(componentId);
                 if (typeof(IComponent).IsAssignableFrom(componentType))

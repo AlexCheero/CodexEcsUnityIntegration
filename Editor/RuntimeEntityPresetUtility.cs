@@ -17,7 +17,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 error = "The runtime entity no longer has a valid source preset.";
                 return false;
             }
-            if (!world.GetMask(entityId).Check(ComponentMapping.EnsureTypeRegistered(componentType)))
+            if (!world.Have(ComponentMapping.EnsureTypeRegistered(componentType), entityId))
             {
                 error = $"The runtime entity no longer has {componentType.Name}.";
                 return false;

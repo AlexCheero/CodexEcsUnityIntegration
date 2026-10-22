@@ -275,8 +275,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TryRemove<T>() => _world.TryRemove<T>(_id);
         
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref readonly BitMask GetMask() => ref _world.GetMask(_id);
+        // Every component of the entity (tests each registered type): for inspectors and debugging.
+        public void CollectMask(ref BitMask mask) => _world.CollectMask(_id, ref mask);
 
         public void DeleteFromWorld()
         {

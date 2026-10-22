@@ -10,6 +10,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
 {
     internal sealed class RuntimeEntityInspector : IDisposable
     {
+        private BitMask _entityMaskBuffer;
+
         private readonly Dictionary<Type, RuntimeComponentEditBuffer> _buffers = new();
         private readonly Dictionary<Type, bool> _foldouts = new();
         private readonly List<Type> _components = new();
@@ -42,7 +44,9 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             // Only enumerate this entity's mask; no world scan or wrapper creation for tags.
             _components.Clear();
             _present.Clear();
-            foreach (var componentId in world.GetMask(entityId))
+            // Only the selected entity's inspector asks: every registered type is tested once per repaint.
+            world.CollectMask(entityId, ref _entityMaskBuffer);
+            foreach (var componentId in _entityMaskBuffer)
             {
                 var type = ComponentMapping.GetTypeForId(componentId);
                 if (typeof(IComponent).IsAssignableFrom(type))
