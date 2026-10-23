@@ -50,11 +50,28 @@ public class EntityPreset : ScriptableObject
     
     public int CreatePureEntity(EcsWorld world)
     {
+        var mask = BuildMask();
+        return CreatePureEntity(world, in mask, in mask);
+    }
+
+    // Places the entity in the allocation group of groupMask, a subset of the preset's components.
+    public int CreatePureEntity(EcsWorld world, in BitMask groupMask)
+    {
+        var mask = BuildMask();
+        return CreatePureEntity(world, in mask, in groupMask);
+    }
+
+    internal BitMask BuildMask()
+    {
         var mask = new BitMask().SetTypeId<PureEntity>();
         for (var i = 0; i < _components.Count; i++)
             mask.Set(_components[i].GetComponentId());
+        return mask;
+    }
 
-        var eid = world.CreateWithComponents(mask);
+    private int CreatePureEntity(EcsWorld world, in BitMask mask, in BitMask groupMask)
+    {
+        var eid = world.CreateWithComponents(in mask, in groupMask);
         for (var i = 0; i < _components.Count; i++)
             _components[i].AddToWorld(world, eid);
 #if UNITY_EDITOR

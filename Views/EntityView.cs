@@ -183,7 +183,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public void PrewarmComponentTypes() => BuildDestinationMask(true);
 
-        private BitMask BuildDestinationMask(bool includeUnityComponents)
+        internal BitMask BuildDestinationMask(bool includeUnityComponents)
         {
             var mask = new BitMask();
             for (var i = 0; i < _components.Count; i++)
@@ -221,14 +221,26 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int InitAsEntity(EcsWorld world)
         {
+            var destinationMask = BuildDestinationMask(true);
+            return InitAsEntity(world, in destinationMask, in destinationMask);
+        }
+
+        // Places the entity in the allocation group of groupMask, a subset of the view's components.
+        public int InitAsEntity(EcsWorld world, in BitMask groupMask)
+        {
+            var destinationMask = BuildDestinationMask(true);
+            return InitAsEntity(world, in destinationMask, in groupMask);
+        }
+
+        private int InitAsEntity(EcsWorld world, in BitMask destinationMask, in BitMask groupMask)
+        {
 #if UNITY_EDITOR
             if (IsValid)
                 Debug.LogError($"EntityView {name} is already valid");
 #endif
-            
+
             _world = world;
-            var destinationMask = BuildDestinationMask(true);
-            _id = world.CreateWithComponents(destinationMask);
+            _id = world.CreateWithComponents(in destinationMask, in groupMask);
             _entity = _world.GetById(_id);
 
             for (var i = 0; i < _components.Count; i++)
@@ -242,7 +254,19 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public int CreatePureEntity(EcsWorld world)
         {
             var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
-            var eid = world.CreateWithComponents(destinationMask);
+            return CreatePureEntity(world, in destinationMask, in destinationMask);
+        }
+
+        // Places the entity in the allocation group of groupMask, a subset of the view's components.
+        public int CreatePureEntity(EcsWorld world, in BitMask groupMask)
+        {
+            var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
+            return CreatePureEntity(world, in destinationMask, in groupMask);
+        }
+
+        private int CreatePureEntity(EcsWorld world, in BitMask destinationMask, in BitMask groupMask)
+        {
+            var eid = world.CreateWithComponents(in destinationMask, in groupMask);
             for (var i = 0; i < _components.Count; i++)
                 _components[i].AddToWorld(world, eid);
             return eid;
