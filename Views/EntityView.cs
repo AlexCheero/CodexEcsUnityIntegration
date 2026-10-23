@@ -133,7 +133,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private set => _id = value;
         }
-        public int Version
+        public uint Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _entity.GetVersion();
