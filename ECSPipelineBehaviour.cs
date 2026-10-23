@@ -228,10 +228,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             SyncRegistrationStates(category, registrations);
-            var start = EcsLoopProfiler.Enabled ? EcsLoopProfiler.Begin() : 0L;
             EnsureInitialized().Initialize(category);
-            if (EcsLoopProfiler.Enabled)
-                EcsLoopProfiler.End(ESystemCategory.Init, start);
         }
         
         private void TickSystemCategory(ESystemCategory category, bool forceTick = false)
@@ -241,10 +238,7 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             SyncRegistrationStates(category, registrations);
-            var start = EcsLoopProfiler.Enabled ? EcsLoopProfiler.Begin() : 0L;
             EnsureInitialized().Tick(category, forceTick);
-            if (EcsLoopProfiler.Enabled)
-                EcsLoopProfiler.End(category, start);
         }
 
         private void SyncRegistrationStates(
