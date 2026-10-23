@@ -13,8 +13,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
     /// reactive flush after each system), summed per rendered frame. Off unless the player is started with
     /// <c>-ecsLoopProfile &lt;file.csv&gt;</c>; then it costs two timestamps per category tick.
     /// Optional: <c>-ecsLoopProfileWarmup &lt;frames&gt;</c> (default 300) frames excluded from the summary,
-    /// <c>-ecsLoopProfileFrames &lt;frames&gt;</c> measured frames after which the player quits.
+    /// <c>-ecsLoopProfileFrom &lt;mark&gt;</c> the warmup counts from the first frame of that mark instead of the
+    /// first recorded frame, <c>-ecsLoopProfileFrames &lt;frames&gt;</c> measured frames after which the player quits.
     /// Writes one CSV row per frame and <c>&lt;file&gt;.summary.txt</c> with median, p95, p99 and mean.
+    /// Game code can add per-frame CSV columns (<see cref="AddColumn"/>) and named marks (<see cref="Mark"/>).
     /// </summary>
     public static class EcsLoopProfiler
     {
@@ -30,6 +32,8 @@ namespace CodexFramework.CodexEcsUnityIntegration
             public int Number;
             public float UnscaledDeltaMs;
             public int FixedTicks;
+            // This frame's samples of the extra columns in ColumnValues.
+            public int ValuesStart, ValuesCount;
             public long Category0, Category1, Category2, Category3, Category4, Category5, Category6, Category7;
 
             public long this[int category]
@@ -63,6 +67,12 @@ namespace CodexFramework.CodexEcsUnityIntegration
         private static Frame _current;
         private static int _currentFrame = -1;
         private static bool _written;
+        private static readonly List<(string Name, Func<double> Sample)> Columns = new();
+        private static readonly List<double> ColumnValues = new(1 << 17);
+        private static readonly List<(string Name, int Frame, int Row)> Marks = new();
+        private static string _warmupFrom;
+        // First row the warmup counts from; -1 until the -ecsLoopProfileFrom mark happens.
+        private static int _measureStartRow;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Initialize()
@@ -76,12 +86,45 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 _warmup = Math.Max(0, warmup);
             if (int.TryParse(ArgumentAfter(args, "-ecsLoopProfileFrames"), out var frames))
                 _measuredFramesToQuit = Math.Max(0, frames);
+            _warmupFrom = ArgumentAfter(args, "-ecsLoopProfileFrom");
+            _measureStartRow = string.IsNullOrEmpty(_warmupFrom) ? 0 : -1;
             Frames.Clear();
+            Columns.Clear();
+            ColumnValues.Clear();
+            Marks.Clear();
             _currentFrame = -1;
             _written = false;
             Application.quitting += Write;
             UnityEngine.Debug.Log($"[EcsLoopProfiler] recording to {_path}, warmup {_warmup} frames" +
+                                  (_measureStartRow < 0 ? $" from mark '{_warmupFrom}'" : "") +
                                   (_measuredFramesToQuit > 0 ? $", quitting after {_measuredFramesToQuit} measured frames" : ""));
+        }
+
+        /// <summary>
+        /// Adds a CSV column sampled once per recorded frame, when the frame's first category tick ends; NaN
+        /// leaves the cell empty. The summary reports the column over the measured frames. No effect when off.
+        /// </summary>
+        public static void AddColumn(string name, Func<double> sample)
+        {
+            if (Enabled && sample != null)
+                Columns.Add((name, sample));
+        }
+
+        /// <summary>
+        /// Names the current frame, e.g. "round-start": the summary lists marks, and
+        /// <c>-ecsLoopProfileFrom &lt;name&gt;</c> counts the warmup from the first one. No effect when off.
+        /// </summary>
+        public static void Mark(string name)
+        {
+            if (!Enabled)
+                return;
+            var frame = Time.frameCount;
+            // The row of this frame: the current one if this frame already ticked, else the next one.
+            var row = _currentFrame < 0 ? 0 : _currentFrame >= frame ? Frames.Count : Frames.Count + 1;
+            Marks.Add((name, frame, row));
+            if (_measureStartRow < 0 && string.Equals(name, _warmupFrom, StringComparison.OrdinalIgnoreCase))
+                _measureStartRow = row;
+            UnityEngine.Debug.Log($"[EcsLoopProfiler] mark '{name}' at frame {frame} (row {row})");
         }
 
         private static string ArgumentAfter(string[] args, string name)
@@ -124,9 +167,18 @@ namespace CodexFramework.CodexEcsUnityIntegration
         {
             if (_currentFrame >= 0)
                 Frames.Add(_current);
-            _current = new Frame { Number = frame, UnscaledDeltaMs = Time.unscaledDeltaTime * 1000f };
+            _current = new Frame
+            {
+                Number = frame,
+                UnscaledDeltaMs = Time.unscaledDeltaTime * 1000f,
+                ValuesStart = ColumnValues.Count,
+                ValuesCount = Columns.Count,
+            };
+            foreach (var column in Columns)
+                ColumnValues.Add(column.Sample());
             _currentFrame = frame;
-            if (_measuredFramesToQuit > 0 && Frames.Count >= _warmup + _measuredFramesToQuit)
+            if (_measuredFramesToQuit > 0 && _measureStartRow >= 0 &&
+                Frames.Count >= _measureStartRow + _warmup + _measuredFramesToQuit)
             {
                 _measuredFramesToQuit = 0;
                 Write();
@@ -152,7 +204,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     csv.Write("frame,unscaled_delta_ms,fixed_ticks");
                     foreach (var name in CategoryNames)
                         csv.Write("," + name.ToLowerInvariant() + "_ms");
-                    csv.WriteLine(",ecs_total_ms");
+                    csv.Write(",ecs_total_ms");
+                    foreach (var column in Columns)
+                        csv.Write("," + column.Name);
+                    csv.WriteLine();
                     foreach (var f in Frames)
                     {
                         csv.Write(f.Number.ToString(inv));
@@ -168,7 +223,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
                             csv.Write((f[c] * TicksToMs).ToString("0.####", inv));
                         }
                         csv.Write(',');
-                        csv.WriteLine((total * TicksToMs).ToString("0.####", inv));
+                        csv.Write((total * TicksToMs).ToString("0.####", inv));
+                        for (var c = 0; c < Columns.Count; c++)
+                        {
+                            csv.Write(',');
+                            var value = ColumnValue(f, c);
+                            if (!double.IsNaN(value))
+                                csv.Write(value.ToString("0.###", inv));
+                        }
+                        csv.WriteLine();
                     }
                 }
                 File.WriteAllText(_path + ".summary.txt", Summary(), new UTF8Encoding(false));
@@ -180,31 +243,44 @@ namespace CodexFramework.CodexEcsUnityIntegration
             }
         }
 
+        private static double ColumnValue(in Frame frame, int column) =>
+            column < frame.ValuesCount ? ColumnValues[frame.ValuesStart + column] : double.NaN;
+
         private static string Summary()
         {
             var inv = CultureInfo.InvariantCulture;
             var measured = new List<Frame>();
-            for (var i = _warmup; i < Frames.Count; i++)
+            var first = _measureStartRow < 0 ? Frames.Count : _measureStartRow + _warmup;
+            for (var i = first; i < Frames.Count; i++)
                 measured.Add(Frames[i]);
             var sb = new StringBuilder();
-            sb.AppendLine($"frames recorded: {Frames.Count}, warmup excluded: {Math.Min(_warmup, Frames.Count)}, measured: {measured.Count}");
+            sb.AppendLine($"frames recorded: {Frames.Count}, warmup excluded: {Math.Min(first, Frames.Count)}, measured: {measured.Count}");
+            if (!string.IsNullOrEmpty(_warmupFrom))
+                sb.AppendLine(_measureStartRow < 0
+                    ? $"warmup counted from mark '{_warmupFrom}', which never happened"
+                    : $"warmup counted from mark '{_warmupFrom}' (row {_measureStartRow})");
+            foreach (var mark in Marks)
+                sb.AppendLine($"mark '{mark.Name}' at frame {mark.Frame} (row {mark.Row})");
             sb.AppendLine($"build: {Application.version}, unity {Application.unityVersion}, {SystemInfo.processorType}, {SystemInfo.operatingSystem}");
             sb.AppendLine("ms per frame          median      p95      p99     mean      max");
             void Row(string name, Func<Frame, double> select)
             {
-                if (measured.Count == 0)
-                    return;
-                var values = new double[measured.Count];
+                var values = new List<double>(measured.Count);
                 double sum = 0;
-                for (var i = 0; i < values.Length; i++)
+                foreach (var frame in measured)
                 {
-                    values[i] = select(measured[i]);
-                    sum += values[i];
+                    var value = select(frame);
+                    if (double.IsNaN(value))
+                        continue;
+                    values.Add(value);
+                    sum += value;
                 }
-                Array.Sort(values);
-                double Pct(double p) => values[Math.Min(values.Length - 1, (int)Math.Floor(p * (values.Length - 1)))];
+                if (values.Count == 0)
+                    return;
+                values.Sort();
+                double Pct(double p) => values[Math.Min(values.Count - 1, (int)Math.Floor(p * (values.Count - 1)))];
                 sb.AppendLine(string.Format(inv, "{0,-18} {1,9:0.000} {2,8:0.000} {3,8:0.000} {4,8:0.000} {5,8:0.000}",
-                    name, Pct(0.5), Pct(0.95), Pct(0.99), sum / values.Length, values[values.Length - 1]));
+                    name, Pct(0.5), Pct(0.95), Pct(0.99), sum / values.Count, values[values.Count - 1]));
             }
             Row("ecs total", f =>
             {
@@ -228,6 +304,15 @@ namespace CodexFramework.CodexEcsUnityIntegration
                     Row(CategoryNames[category], f => f[category] * TicksToMs);
             }
             Row("frame (unscaled)", f => f.UnscaledDeltaMs);
+            if (Columns.Count > 0)
+            {
+                sb.AppendLine("columns               median      p95      p99     mean      max");
+                for (var c = 0; c < Columns.Count; c++)
+                {
+                    var column = c;
+                    Row(Columns[column].Name, f => ColumnValue(f, column));
+                }
+            }
             return sb.ToString();
         }
     }
