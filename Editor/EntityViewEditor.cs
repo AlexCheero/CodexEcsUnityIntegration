@@ -27,6 +27,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(_forceInitProp);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_groupMask"), new GUIContent("Group Mask"));
             
             if (!_view.IsViewValid())
             {

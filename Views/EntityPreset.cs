@@ -27,12 +27,25 @@ public class EntityPreset : ScriptableObject
         return preset != null;
     }
     
-    private void OnValidate() => EntityValidator.ValidateComponents(this, _components);
+    private void OnValidate()
+    {
+        EntityValidator.ValidateComponents(this, _components);
+        _groupMask.Invalidate();
+    }
+
+    public void CollectGroupMaskTypes(List<System.Type> types)
+    {
+        var mask = BuildMask();
+        foreach (var id in mask)
+            types.Add(ComponentMapping.GetTypeForId(id));
+    }
 #endif
     
     [SerializeReference]
-    private List<ComponentWrapper> _components;
+    private List<ComponentWrapper> _components = new();
     public IReadOnlyList<ComponentWrapper> Components => _components;
+
+    [SerializeField] private EntityGroupMask _groupMask = new();
 
     public bool TryGetComponentDefaultValue<T>(out T result) where T : IComponent
     {
@@ -51,13 +64,7 @@ public class EntityPreset : ScriptableObject
     public int CreatePureEntity(EcsWorld world)
     {
         var mask = BuildMask();
-        return CreatePureEntity(world, in mask, in mask);
-    }
-
-    // Places the entity in the allocation group of groupMask, a subset of the preset's components.
-    public int CreatePureEntity(EcsWorld world, in BitMask groupMask)
-    {
-        var mask = BuildMask();
+        var groupMask = _groupMask.Resolve(in mask);
         return CreatePureEntity(world, in mask, in groupMask);
     }
 

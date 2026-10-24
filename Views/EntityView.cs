@@ -64,12 +64,25 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddInspector<T>() => Add<T>();
 
-        private void OnValidate() => EntityValidator.ValidateComponents(this, _components);
+        private void OnValidate()
+        {
+            EntityValidator.ValidateComponents(this, _components);
+            _groupMask.Invalidate();
+        }
+
+        public void CollectGroupMaskTypes(List<Type> types)
+        {
+            var mask = BuildDestinationMask(true);
+            foreach (var id in mask)
+                types.Add(ComponentMapping.GetTypeForId(id));
+        }
 #endif
         
         [SerializeReference]
-        private List<ComponentWrapper> _components;
+        private List<ComponentWrapper> _components = new();
         public IReadOnlyList<ComponentWrapper> Components => _components;
+
+        [SerializeField] private EntityGroupMask _groupMask = new();
         
         private Dictionary<Type, ComponentWrapper> _componentsMap;
 
@@ -106,7 +119,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         }
 
         [SerializeField]
-        private List<Component> _unityComponentsBuffer;
+        private List<Component> _unityComponentsBuffer = new();
 
         private EcsWorld _world;
         private Entity _entity = EntityExtension.NullEntity;
@@ -222,13 +235,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public int InitAsEntity(EcsWorld world)
         {
             var destinationMask = BuildDestinationMask(true);
-            return InitAsEntity(world, in destinationMask, in destinationMask);
-        }
-
-        // Places the entity in the allocation group of groupMask, a subset of the view's components.
-        public int InitAsEntity(EcsWorld world, in BitMask groupMask)
-        {
-            var destinationMask = BuildDestinationMask(true);
+            var groupMask = _groupMask.Resolve(in destinationMask);
             return InitAsEntity(world, in destinationMask, in groupMask);
         }
 
@@ -254,13 +261,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public int CreatePureEntity(EcsWorld world)
         {
             var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
-            return CreatePureEntity(world, in destinationMask, in destinationMask);
-        }
-
-        // Places the entity in the allocation group of groupMask, a subset of the view's components.
-        public int CreatePureEntity(EcsWorld world, in BitMask groupMask)
-        {
-            var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
+            var groupMask = _groupMask.Resolve(in destinationMask);
             return CreatePureEntity(world, in destinationMask, in groupMask);
         }
 

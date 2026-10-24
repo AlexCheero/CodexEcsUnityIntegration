@@ -13,6 +13,7 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
         {
             var so = (EntityPreset)target;
             serializedObject.Update();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_groupMask"), new UnityEngine.GUIContent("Group Mask"));
 
             EntityEditorHelper.DrawComponentsInspector(_componentsProp, so.Components, so);
 

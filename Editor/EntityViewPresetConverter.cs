@@ -155,6 +155,8 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor
                 destProp.GetArrayElementAtIndex(index).managedReferenceValue = clone;
             }
 
+            using var sourceSo = new SerializedObject(source);
+            destSo.CopyFromSerializedProperty(sourceSo.FindProperty("_groupMask"));
             destSo.ApplyModifiedPropertiesWithoutUndo();
             return destProp.arraySize;
         }
