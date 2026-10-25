@@ -136,6 +136,10 @@ namespace CodexFramework.CodexEcsUnityIntegration
             _pipeline = new EcsPipeline<ESystemCategory>(
                 world,
                 IntegrationHelper.SystemCategories);
+#if PERFORMANCE_BENCHMARK
+            if (EcsLoopProfiler.Enabled)
+                _pipeline.SystemTicked = EcsLoopProfiler.OnSystemTicked;
+#endif
             _systemToIndexMapping = new();
             _registrations = new();
 
@@ -228,7 +232,13 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             SyncRegistrationStates(category, registrations);
+#if PERFORMANCE_BENCHMARK
+            var benchmarkStart = EcsLoopProfiler.Enabled ? EcsLoopProfiler.Begin() : 0L;
+#endif
             EnsureInitialized().Initialize(category);
+#if PERFORMANCE_BENCHMARK
+            if (EcsLoopProfiler.Enabled) EcsLoopProfiler.End(ESystemCategory.Init, benchmarkStart);
+#endif
         }
         
         private void TickSystemCategory(ESystemCategory category, bool forceTick = false)
@@ -238,7 +248,13 @@ namespace CodexFramework.CodexEcsUnityIntegration
                 return;
 
             SyncRegistrationStates(category, registrations);
+#if PERFORMANCE_BENCHMARK
+            var benchmarkStart = EcsLoopProfiler.Enabled ? EcsLoopProfiler.Begin() : 0L;
+#endif
             EnsureInitialized().Tick(category, forceTick);
+#if PERFORMANCE_BENCHMARK
+            if (EcsLoopProfiler.Enabled) EcsLoopProfiler.End(category, benchmarkStart);
+#endif
         }
 
         private void SyncRegistrationStates(
