@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CodexECS;
 using CodexFramework.CodexEcsUnityIntegration.Tags;
@@ -26,11 +27,13 @@ public class EntityPreset : ScriptableObject
         preset = source.Preset;
         return preset != null;
     }
-    
+
     private void OnValidate()
     {
         EntityValidator.ValidateComponents(this, _components);
         _groupMask.Invalidate();
+        _masksCached = false;
+        _componentsMap = null;
     }
 
     public void CollectGroupMaskTypes(List<System.Type> types)
@@ -40,32 +43,45 @@ public class EntityPreset : ScriptableObject
             types.Add(ComponentMapping.GetTypeForId(id));
     }
 #endif
-    
+
     [SerializeReference]
     private List<ComponentWrapper> _components = new();
     public IReadOnlyList<ComponentWrapper> Components => _components;
 
     [SerializeField] private EntityGroupMask _groupMask = new();
 
+    // Authored content is immutable at runtime: the component masks are built once per preset
+    // instead of once per spawn, and type lookups use a map instead of a virtual-call scan.
+    // These fields are not serialized, so a domain reload (and OnValidate) rebuilds them.
+    private BitMask _cachedMask, _cachedGroupMask;
+    private bool _masksCached;
+    private Dictionary<Type, ComponentWrapper> _componentsMap;
+
     public bool TryGetComponentDefaultValue<T>(out T result) where T : IComponent
     {
         result = default;
         var targetType = typeof(T);
-        for (int i = 0; i < _components.Count; i++)
+        if (_componentsMap == null)
         {
-            if (_components[i].GetComponentType() != targetType)
-                continue;
-            result = ((ComponentWrapper<T>)_components[i]).Component;
-            return true;
+            _componentsMap = new Dictionary<Type, ComponentWrapper>(_components.Count);
+            for (int i = 0; i < _components.Count; i++)
+                _componentsMap[_components[i].GetComponentType()] = _components[i];
         }
-        return false;
+        if (!_componentsMap.TryGetValue(targetType, out var wrapper))
+            return false;
+        result = ((ComponentWrapper<T>)wrapper).Component;
+        return true;
     }
-    
+
     public int CreatePureEntity(EcsWorld world)
     {
-        var mask = BuildMask();
-        var groupMask = _groupMask.Resolve(in mask);
-        return CreatePureEntity(world, in mask, in groupMask);
+        if (!_masksCached)
+        {
+            _cachedMask = BuildMask();
+            _cachedGroupMask = _groupMask.Resolve(in _cachedMask);
+            _masksCached = true;
+        }
+        return CreatePureEntity(world, in _cachedMask, in _cachedGroupMask);
     }
 
     internal BitMask BuildMask()

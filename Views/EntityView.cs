@@ -43,6 +43,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         [ContextMenu(nameof(RebuildUnityComponentsCache))]
         public void RebuildUnityComponentsCache()
         {
+            InvalidateCachedMasks();
             var allComponents = GetComponents<Component>();
             _unityComponentsBuffer = new List<Component>(allComponents.Length);
             for (var i = 0; i < allComponents.Length; i++)
@@ -68,6 +69,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         {
             EntityValidator.ValidateComponents(this, _components);
             _groupMask.Invalidate();
+            InvalidateCachedMasks();
+            _componentsMap = null;
         }
 
         public void CollectGroupMaskTypes(List<Type> types)
@@ -83,8 +86,25 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         public IReadOnlyList<ComponentWrapper> Components => _components;
 
         [SerializeField] private EntityGroupMask _groupMask = new();
-        
+
         private Dictionary<Type, ComponentWrapper> _componentsMap;
+
+        // Authored components and the prefab's Unity component buffer do not change at runtime,
+        // so the destination masks and the per-Unity-component ids are built once per view
+        // instance (pooled views are initialized many times). Not serialized: a domain reload,
+        // OnValidate or RebuildUnityComponentsCache rebuilds them.
+        private BitMask _viewMask, _viewGroupMask, _pureMask, _pureGroupMask;
+        private bool _viewMasksCached, _pureMasksCached;
+        private int[] _unityComponentIds;
+        private bool[] _unityComponentIsMultiple;
+
+        private void InvalidateCachedMasks()
+        {
+            _viewMasksCached = false;
+            _pureMasksCached = false;
+            _unityComponentIds = null;
+            _unityComponentIsMultiple = null;
+        }
 
         public bool TryGetComponentDefaultValue<T>(out T result) where T : IComponent
         {
@@ -160,19 +180,32 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
         
         private void RegisterUnityComponents(EcsWorld world)
         {
-            var populatedTypes = new BitMask();
+            EnsureUnityComponentIds();
             for (int i = 0; i < _unityComponentsBuffer.Count; i++)
             {
-                var component = _unityComponentsBuffer[i];
-                var type = GetUnityComponentType(i);
-                var componentId = EnsureComponentTypeRegistered(type);
-                if (populatedTypes.Check(componentId))
-                    world.AddMultiple_Dynamic(type, _id, component);
+                var dispatcher = ComponentMapping.GetDispatcher(_unityComponentIds[i]);
+                // The first component of a type fills the default slot; repeats join its multiple storage.
+                if (_unityComponentIsMultiple[i])
+                    dispatcher.AddMultiple(world, _id, _unityComponentsBuffer[i]);
                 else
-                {
-                    world.Set_Dynamic(type, _id, component);
-                    populatedTypes.Set(componentId);
-                }
+                    dispatcher.Set(world, _id, _unityComponentsBuffer[i]);
+            }
+        }
+
+        private void EnsureUnityComponentIds()
+        {
+            var count = _unityComponentsBuffer.Count;
+            if (_unityComponentIds != null && _unityComponentIds.Length == count)
+                return;
+            _unityComponentIds = new int[count];
+            _unityComponentIsMultiple = new bool[count];
+            var seenTypes = new BitMask();
+            for (var i = 0; i < count; i++)
+            {
+                var componentId = EnsureComponentTypeRegistered(GetUnityComponentType(i));
+                _unityComponentIds[i] = componentId;
+                _unityComponentIsMultiple[i] = seenTypes.Check(componentId);
+                seenTypes.Set(componentId);
             }
         }
 
@@ -234,9 +267,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int InitAsEntity(EcsWorld world)
         {
-            var destinationMask = BuildDestinationMask(true);
-            var groupMask = _groupMask.Resolve(in destinationMask);
-            return InitAsEntity(world, in destinationMask, in groupMask);
+            if (!_viewMasksCached)
+            {
+                _viewMask = BuildDestinationMask(true);
+                _viewGroupMask = _groupMask.Resolve(in _viewMask);
+                _viewMasksCached = true;
+            }
+            return InitAsEntity(world, in _viewMask, in _viewGroupMask);
         }
 
         private int InitAsEntity(EcsWorld world, in BitMask destinationMask, in BitMask groupMask)
@@ -260,9 +297,13 @@ namespace CodexFramework.CodexEcsUnityIntegration.Views
 
         public int CreatePureEntity(EcsWorld world)
         {
-            var destinationMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
-            var groupMask = _groupMask.Resolve(in destinationMask);
-            return CreatePureEntity(world, in destinationMask, in groupMask);
+            if (!_pureMasksCached)
+            {
+                _pureMask = BuildDestinationMask(false).SetTypeId<PureEntity>();
+                _pureGroupMask = _groupMask.Resolve(in _pureMask);
+                _pureMasksCached = true;
+            }
+            return CreatePureEntity(world, in _pureMask, in _pureGroupMask);
         }
 
         private int CreatePureEntity(EcsWorld world, in BitMask destinationMask, in BitMask groupMask)
