@@ -79,6 +79,68 @@ namespace CodexUnityFramework.CodexEcsUnityIntegration.Editor.Tests
         }
 
         [Test]
+        public void CreatePureEntity_ReusesCachedMasksAndAuthoredValuesAcrossSpawns()
+        {
+            var editable = new ComponentWrapper<Editable>();
+            editable.InitFromComponent(new Editable { Value = 7 });
+            var position = new ComponentWrapper<Position>();
+            position.InitFromComponent(new Position { position = Vector3.one });
+            var preset = CreatePreset(editable, position);
+            try
+            {
+                var world = new EcsWorld();
+                var first = preset.CreatePureEntity(world);
+                var second = preset.CreatePureEntity(world);
+                foreach (var id in new[] { first, second })
+                {
+                    Assert.IsTrue(world.Have<PureEntity>(id));
+                    Assert.AreEqual(7, world.Get<Editable>(id).Value);
+                    Assert.AreEqual(Vector3.one, world.Get<Position>(id).position);
+                }
+                Assert.IsTrue(preset.TryGetComponentDefaultValue<Editable>(out var authored));
+                Assert.AreEqual(7, authored.Value);
+                Assert.IsFalse(preset.TryGetComponentDefaultValue<Required>(out _));
+                world.Delete(first);
+                var third = preset.CreatePureEntity(world);
+                Assert.AreEqual(7, world.Get<Editable>(third).Value, "The cached mask must keep producing the authored set.");
+                Assert.IsTrue(world.Have<Position>(third));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(preset); }
+        }
+
+        [Test]
+        public void EntityView_ReinitializesFromCachedMasksWithUnityComponents()
+        {
+            var root = new GameObject("Cached mask view");
+            root.SetActive(false);
+            try
+            {
+                var view = root.AddComponent<EntityView>();
+                var editable = new ComponentWrapper<Editable>();
+                editable.InitFromComponent(new Editable { Value = 3 });
+                typeof(EntityView).GetField("_components", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(view, new List<ComponentWrapper> { editable });
+                view.RebuildUnityComponentsCache();
+                var world = new EcsWorld();
+                for (var cycle = 0; cycle < 3; cycle++)
+                {
+                    var id = view.InitAsEntity(world);
+                    Assert.IsTrue(world.Have<Transform>(id), "Unity components register on every pooled reuse.");
+                    Assert.AreSame(root.transform, world.Get<Transform>(id));
+                    Assert.IsTrue(world.Have<EntityView>(id));
+                    Assert.AreEqual(3, world.Get<Editable>(id).Value);
+                    Assert.IsFalse(world.Have<PureEntity>(id));
+                    world.Delete(id);
+                }
+                var pure = view.CreatePureEntity(world);
+                Assert.IsTrue(world.Have<PureEntity>(pure));
+                Assert.IsFalse(world.Have<Transform>(pure), "Pure creation from a view skips Unity components.");
+                Assert.AreEqual(3, world.Get<Editable>(pure).Value);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void ApplyToPreset_CopiesOnlySelectedSerializedComponentAndSupportsUndo()
         {
             var editable = new ComponentWrapper<Editable>();
