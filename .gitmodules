@@ -3,4 +3,4 @@
 	url = ../ECS.git
 [submodule "CodexNetworking"]
 	path = CodexNetworking
-	url = https://github.com/AlexCheero/CodexNetworking.git
+	url = git@github.com:AlexCheero/CodexNetworking.git
