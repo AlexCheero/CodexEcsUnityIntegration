@@ -68,15 +68,22 @@ namespace CodexFramework.CodexEcsUnityIntegration.Networking
     public abstract class InputSyncHostBehaviour<TInput> : InputSyncBehaviour<TInput> where TInput : unmanaged
     {
         [SerializeField] private ushort _port = 7777;
+        [SerializeField, Tooltip("Off: the host only relays and spectates; its inputs are default for everyone.")]
+        private bool _hostPlays = true;
 
         public InputSyncRelayHost<TInput> Relay { get; private set; }
 
         public InputSyncSession<TInput> Session => Relay?.Session;
 
+        /// <summary>Keeps this peer level with the others (see <see cref="InputSyncSession{TInput}.RecommendedRateScale"/>).</summary>
+        protected override double RateScale => Session == null ? 1.0 : Session.RecommendedRateScale;
+
         protected virtual void Start()
         {
             InputSyncSession<TInput> session = CreateSession(0);
             session.Start();
+            if (!_hostPlays)
+                session.SetLocalSpectator();
             NetConfig netConfig = CreateNetConfig();
             netConfig.MaxClients = Mathf.Max(netConfig.MaxClients, session.PeerCount);
             Relay = new InputSyncRelayHost<TInput>(netConfig, new UdpSocket(Address.Any(_port)), new CryptoRandom(), session);
@@ -126,6 +133,8 @@ namespace CodexFramework.CodexEcsUnityIntegration.Networking
         public InputSyncClientLink<TInput> Link { get; private set; }
 
         public InputSyncSession<TInput> Session => Link?.Session;
+
+        protected override double RateScale => Session == null ? 1.0 : Session.RecommendedRateScale;
 
         protected virtual void Start()
         {
