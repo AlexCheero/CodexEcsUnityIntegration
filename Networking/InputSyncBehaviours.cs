@@ -129,7 +129,7 @@ namespace CodexFramework.CodexEcsUnityIntegration.Networking
 
         protected virtual void Start()
         {
-            Link = new InputSyncClientLink<TInput>(CreateNetConfig(), new UdpSocket(Address.Any(0)), new CryptoRandom(), CreateSession);
+            Link = new InputSyncClientLink<TInput>(CreateNetConfig(), new UdpSocket(Address.Any(0)), new CryptoRandom(), CreateConfig(), CreateSession);
             if (UdpSocket.TryResolve(_host, _port, out Address host))
                 Link.Connect(host, Now);
             else
