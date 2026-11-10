@@ -124,7 +124,14 @@ namespace CodexFramework.CodexEcsUnityIntegration.Networking
             return true;
         }
 
-        protected override void OnFrameEnd(double now) => Client?.SendInputs();
+        /// <summary>Sends inputs and refreshes the Interpolated copies for this frame's render time.</summary>
+        protected override void OnFrameEnd(double now)
+        {
+            if (Client == null)
+                return;
+            Client.SendInputs();
+            Client.UpdateInterpolation(Client.RenderTick(Clock.Alpha));
+        }
 
         protected virtual void OnDestroy()
         {
